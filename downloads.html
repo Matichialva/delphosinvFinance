@@ -46,7 +46,7 @@
   </header>
 
   <section>
-    <h2>Stocks: price variations over the years</h2>
+    <h2>Excel Data</h2>
     <table id="excelTable">
       <!-- Table content will be dynamically added using JavaScript -->
     </table>
@@ -55,7 +55,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js"></script>
   <script>
     // Replace 'your-excel-file.xlsx' with your actual Excel file path
-    const excelFile = 'styledStocksPercentage.xlsx';
+    const excelFile = 'excel-files/your-excel-file.xlsx';
 
     // Fetch and parse Excel file
     fetch(excelFile)
@@ -70,14 +70,21 @@
         const table = document.getElementById('excelTable');
         table.innerHTML = '';
 
+        // Create header row
+        const headerRow = table.insertRow();
+        Object.keys(tableData[0]).forEach(header => {
+          const th = document.createElement('th');
+          th.textContent = header;
+          headerRow.appendChild(th);
+        });
+
+        // Create data rows with background colors
         tableData.forEach((rowData, rowIndex) => {
           const row = table.insertRow();
-          rowData.forEach((cellData, colIndex) => {
+          Object.entries(rowData).forEach(([key, value]) => {
             const cell = row.insertCell();
-            cell.textContent = cellData;
-
-            // Preserve background color from Excel file
-            const bgColor = getCellBackground(sheet, XLSX.utils.encode_cell({ r: rowIndex, c: colIndex }));
+            cell.textContent = value;
+            const bgColor = getCellBackground(sheet, XLSX.utils.encode_cell({ r: rowIndex + 1, c: Object.keys(tableData[0]).indexOf(key) }));
             if (bgColor) {
               cell.style.backgroundColor = bgColor;
             }
