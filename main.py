@@ -1,7 +1,7 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from functions import *
+from functions_dataframe import *
 from datetime import datetime
 
 #lista de acciones
@@ -40,7 +40,9 @@ percentageDF = add_sectors(sectorStockDict, percentageDF) #add stock's sectors
 percentageDF = add_price_changes(df, percentageDF) #add price changes
 
 #aplico el gradiente colorido a las columnas de stocks
-stylePercentageDF = style_dataframe(percentageDF)
+columnsExcluded = ["Stock", "Sector"]
+columnsIncluded = percentageDF.columns.difference(columnsExcluded)
+stylePercentageDF = style_dataframe(percentageDF, columnsIncluded)
 
 #-------------------dataframes to excel-----------------------------
 stylePercentageDF.to_excel("styledStocksPercentage.xlsx", index=True) #lo paso a un excel
