@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from functions_dataframe import *
 from functions_indicators import *
-
 from datetime import datetime
+
 
 
 #lista de acciones
@@ -22,27 +22,42 @@ df.to_excel("stocks_test.xlsx", index=True) #lo paso a un excel
 #-----------------dataframe con porcentajes----------------------
 df = pd.read_excel("stocks_test.xlsx", index_col="Date")
 
-indicatorsDF = pd.DataFrame(index=df.columns, columns=["current/200media", "50media/200media", "current/min(52 weeks)", "current/max(52 weeks)", "RSI", "MACD"])
+indicatorsDF = pd.DataFrame(index=df.columns, columns=["current/200media", "50media/200media", "current/min(52 weeks)", "current/max(52 weeks)", "RSI7d", "RSI14d", "RSI21d", "RSI70d", "MACD"])
 indicatorsDF.index.name = "Stock"
 
 for stock in df.columns:
     currentDate = df.index[-1] #última fecha
     current = df[stock].loc[currentDate]
 
+    #extraigo toda la data usando funciones de functions_indicators.py
     media200 = find_media_rounds(df, stock, 200)
     media50 = find_media_rounds(df, stock, 50)
 
     min_52_weeks = min_price(df, stock, 52)
     max_52_weeks = max_price(df, stock, 52)
 
+    RSI7d = rsi_tradingview(df, stock, 7)
+    RSI14d = rsi_tradingview(df, stock, 14)
+    RSI21d = rsi_tradingview(df, stock, 21)
+    RSI70d = rsi_tradingview(df, stock, 70)
+
+    macd = calculate_macd(df, stock)
+
+    #meto la información en el dataframe en respectivo lugar
     indicatorsDF.loc[stock, "current/200media"] = round(((current / media200)-1)*100, 2)
     indicatorsDF.loc[stock, "50media/200media"] = round(((media50 / media200)-1)*100, 2)
     indicatorsDF.loc[stock, "current/min(52 weeks)"] = round(((current / min_52_weeks)-1)*100, 2)
     indicatorsDF.loc[stock, "current/max(52 weeks)"] = round(((current / max_52_weeks)-1)*100, 2)
+    indicatorsDF.loc[stock, "RSI7d"] = round(RSI7d, 2)
+    indicatorsDF.loc[stock, "RSI14d"] = round(RSI14d, 2)
+    indicatorsDF.loc[stock, "RSI21d"] = round(RSI21d, 2)
+    indicatorsDF.loc[stock, "RSI70d"] = round(RSI70d, 2)
+    indicatorsDF.loc[stock, "MACD"] = round(macd, 2)
 
+#background gradient para cada columna
 columnsExcluded = ["Stock"]
 columnsIncluded = indicatorsDF.columns.difference(columnsExcluded)
-styledIndicatorsDF = style_dataframe(indicatorsDF, ["current/200media", "50media/200media", "current/min(52 weeks)", "current/max(52 weeks)"])
+styledIndicatorsDF = style_dataframe(indicatorsDF, columnsIncluded)
 
 styledIndicatorsDF.to_excel("styledTechnicalIndicators.xlsx", index=True)
 

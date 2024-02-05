@@ -19,7 +19,7 @@ sectorStockDict = {
 }
 
 #-----------------dataframe con precios diarios----------------------
-
+'''
 #DF vacío, índice = date, donde va desde 1800 hasta hoy.
 hoy = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
 df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=hoy, freq="B")) #freq B -> business days
@@ -27,7 +27,7 @@ df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=hoy, freq=
 df = add_data_dataframe(stocks, df) #lleno el df con data de cada stock
 cleaning_dataframe(df) #función que limpia datos
 df.to_excel("stocks_test.xlsx", index=True) #lo paso a un excel
-
+'''
 #-----------------dataframe con porcentajes----------------------
 df = pd.read_excel("stocks_test.xlsx", index_col="Date")
 

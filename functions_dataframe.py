@@ -25,6 +25,7 @@ def add_price_changes(df, percentageDF):
     to compare each stock value to its previous values and adds the price change to percentageDF.'''
 
     for stock in df.columns:  # para cada stock
+        df.index = pd.to_datetime(df.index)
         currentDate = df.index[-1]
         current = df[stock].loc[currentDate]  # last price in the stock column
 
