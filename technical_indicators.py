@@ -22,7 +22,7 @@ df.to_excel("stocks_test.xlsx", index=True) #lo paso a un excel
 #-----------------dataframe con porcentajes----------------------
 df = pd.read_excel("stocks_test.xlsx", index_col="Date")
 
-indicatorsDF = pd.DataFrame(index=df.columns, columns=["current/200media", "50media/200media", "current/min(52 weeks)", "current/max(52 weeks)", "RSI7d", "RSI14d", "RSI21d", "RSI70d", "MACD"])
+indicatorsDF = pd.DataFrame(index=df.columns, columns=["current/200media", "50media/200media", "current/min(52 weeks)", "current/max(52 weeks)", "RSI7d", "RSI14d", "RSI21d", "RSI70d", "MACD", "signal"])
 indicatorsDF.index.name = "Stock"
 
 for stock in df.columns:
@@ -41,7 +41,8 @@ for stock in df.columns:
     RSI21d = rsi_tradingview(df, stock, 21)
     RSI70d = rsi_tradingview(df, stock, 70)
 
-    macd = calculate_macd(df, stock)
+    macd, signal = calculate_macd(df, stock)
+
 
     #meto la información en el dataframe en respectivo lugar
     indicatorsDF.loc[stock, "current/200media"] = round(((current / media200)-1)*100, 2)
@@ -53,6 +54,7 @@ for stock in df.columns:
     indicatorsDF.loc[stock, "RSI21d"] = round(RSI21d, 2)
     indicatorsDF.loc[stock, "RSI70d"] = round(RSI70d, 2)
     indicatorsDF.loc[stock, "MACD"] = round(macd, 2)
+    indicatorsDF.loc[stock, "signal"] = round(signal, 2)
 
 #background gradient para cada columna
 columnsExcluded = ["Stock"]

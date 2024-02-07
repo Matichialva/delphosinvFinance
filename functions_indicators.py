@@ -16,7 +16,7 @@ def min_price(df, stock, weeks):
     #set range of days
     end_date = df.index[-1]
     start_date = end_date - timedelta(weeks=weeks)
-    start_date = find_closest_date(start_date, df) #look for closest if start day doesn't exist in df
+    start_date = find_previous_closest_date(start_date, df) #look for closest if start day doesn't exist in df
 
     df_period = df.loc[start_date:end_date]
     min_last_values = df_period[stock].min()
@@ -29,7 +29,7 @@ def max_price(df, stock, weeks):
     # set range of days
     end_date = df.index[-1]
     start_date = end_date - timedelta(weeks=weeks)
-    start_date = find_closest_date(start_date, df)  # look for closest if start day doesn't exist in df
+    start_date = find_previous_closest_date(start_date, df)  # look for closest if start day doesn't exist in df
 
     df_period = df.loc[start_date:end_date]
 
@@ -42,7 +42,7 @@ def calculate_rsi(df, stock, days):
     # set range of days
     end_date = df.index[-1]
     start_date = end_date - timedelta(days=days)
-    start_date = find_closest_date(start_date, df)  # look for closest if start day doesn't exist in df
+    start_date = find_previous_closest_date(start_date, df)  # look for closest if start day doesn't exist in df
 
     df_period = df.loc[start_date:end_date]
 
@@ -78,7 +78,7 @@ def calculate_rsi_weeks(df, stock, weeks):
     # set range of days
     end_date = df.index[-1]
     start_date = end_date - timedelta(weeks=weeks)
-    start_date = find_closest_date(start_date, df)  # look for closest if start day doesn't exist in df
+    start_date = find_previous_closest_date(start_date, df)  # look for closest if start day doesn't exist in df
 
     df_period = df.loc[start_date:end_date]
 
@@ -132,11 +132,11 @@ def rsi_tradingview(df: pd.DataFrame, stock, period_days):
     return rsi[-1]
 
 def calculate_macd(df: pd.DataFrame, stock):
-    '''given df with stock info and the stock, calculate its macd'''
+    '''given df with stock info and the stock, calculate its macd and signal line'''
     ema12 = df[stock].ewm(span=12, adjust=False).mean() #adjust False -> exponentially weighted function recursive
     ema26 = df[stock].ewm(span=26, adjust=False).mean()
     macd = ema12 - ema26 #macd series
+    signal_line = macd.ewm(span=9, adjust=False).mean()
 
-    return macd.iloc[-1]
-
+    return macd.iloc[-1], signal_line.iloc[-1]
 
