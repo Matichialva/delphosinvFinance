@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-def add_data_dataframe(stocks, df):
+def add_data_dataframe(stocks, df, periodo):
     '''given a list of stocks and a dataframe, downloads the "Close" price
      of each stock everyday and concatenates it to the dataframe.'''
     for stock in stocks:
-        stockDataframe = yf.download(stock, period="max")["Close"]  # columna de cotización de la stock
+        stockDataframe = yf.download(stock, period=periodo)["Close"]  # columna de cotización de la stock
         stockDataframe.name = stock  # column name is the stock name
         df = pd.concat([df, stockDataframe], axis=1)  # mergeo data de cada stock al df
     return df
@@ -78,17 +78,14 @@ def add_price_changes(df, percentageDF):
         dateAskedPriceChange = (current - dateAskedValue) / dateAskedValue * 100
         percentageDF.loc[stock, "2022/12/9"] = round(dateAskedPriceChange, 1)
 
-        deviationReturn1D = get_standarized_daily_return(df, stock)
+        deviationReturn1D = get_standarized_daily_return(df, stock, 66)
         percentageDF.loc[stock, "1Ddesvios"] = round(deviationReturn1D, 1)
 
         deviationReturn1W = get_standarized_weekly_return(df, stock)
         percentageDF.loc[stock, "1Wdesvios"] = round(deviationReturn1W, 1)
 
         deviationReturn1M = get_standarized_monthly_return(df, stock)
-        percentageDF.loc[stock, "1Mdesvios"] = deviationReturn1M
-
-        deviationReturn3M = get_standarized_trimestral_return(df, stock)
-        percentageDF.loc[stock, "3Mdesvios"] = deviationReturn3M
+        percentageDF.loc[stock, "1Mdesvios"] = round(deviationReturn1M, 1)
 
     return percentageDF
 
@@ -118,18 +115,22 @@ def find_previous_closest_date(current_date, df):
 
     return closest_date
 
-def get_standarized_daily_return(df, stock):
-    daily_returns = df[stock].pct_change().iloc[-67:-1]
+def get_standarized_daily_return(df, stock, number_of_days):
+    '''df: dataframe
+       stock: stock
+       number_of_days: número de días a tomar para sacar la mediana, que luego
+       será usada para estandarizar.'''
+
+    daily_returns = df[stock].pct_change().iloc[-(number_of_days+1):]
     current_pct = daily_returns[-1]
-    mean_66_rounds_pct = daily_returns.median() #median price change
-    deviation_66_rounds_pct = daily_returns.std()
-    standarized_price = (current_pct - mean_66_rounds_pct) / (deviation_66_rounds_pct)
+
+    mediana = daily_returns.median()
+    desvio = daily_returns.std()
+
+    standarized_price = (current_pct - mediana) / (desvio)
     return standarized_price
 
 def get_standarized_weekly_return(df, stock):
-    #current_date = df.index[-1]
-    #current_price = df[stock].loc[current_date]
-
     current_day_of_week = df[stock].index[-1].day_name() #nombre de dia de semana
     starting_day = current_day_of_week[:3] #tomo las primeras 3 letras
 
@@ -139,64 +140,49 @@ def get_standarized_weekly_return(df, stock):
     #cada semana termina el dia semanal de hoy. si hoy es miercoles, arranca la semana el jueves y termina el miercoles (closed='right')
     weekly_returns = df[stock].resample('W-' + starting_day, closed='right').last().pct_change()
 
-    #agarro % de la última actual semana
-    current_week_return = weekly_returns.iloc[-1]
+    current_week_return = weekly_returns.iloc[-1] #agarro % de la última actual semana
+    last_13_weeks_returns = weekly_returns.iloc[-14:-1]  #últimas 13 sin contar la actual
 
-    #últimas 13 sin contar la actual
-    last_13_weeks_returns = weekly_returns.iloc[-14:-1]
+    med_13weeks = last_13_weeks_returns.median()
+    desvio_13weeks = last_13_weeks_returns.std()
 
-    #saco mediana y desvio de los 13 price changes
-    med = last_13_weeks_returns.median()
-    ds = last_13_weeks_returns.std()
-
-    #print(stock, current_week_return, med, ds)
-
-    #lo estandarizo.
-    standarized = (current_week_return - med) / (ds)
+    standarized = (current_week_return - med_13weeks) / (desvio_13weeks)
     return standarized
 
 def get_standarized_monthly_return(df, stock):
     current_day_of_week = df[stock].index[-1].day_name()  # nombre de dia de semana
     starting_day = current_day_of_week[:3]  # tomo las primeras 3 letras
 
-    weekly_returns = df[stock].resample('W-' + starting_day, closed='right').last().pct_change()
-    last_56_weeks_returns = weekly_returns.iloc[-56:]
+    #retornos semanales, y precios semanales en dataframes
+    weekly_returns_prices = df[stock].resample('W-' + starting_day, closed='right').last()
+    weekly_returns_pct = weekly_returns_prices.pct_change()
 
-    #numeric index, Date and weekly_returns
-    four_week_packs = create_4week_from_weeks(stock, last_56_weeks_returns) #dejar el último al final nuevamente
+    monthly_returns_prices = weekly_returns_prices.iloc[::-1][0::4][::-1] #lo doy vuelta, selecciono cada 4 semanas y lo vuelvo a dar vuelta
+    monthly_return_pct = monthly_returns_prices.pct_change() #misma pero con %
+    last_month_return = monthly_return_pct.iloc[-1] #retorno del último mes
 
-    last_month_return = four_week_packs.iloc[-1]["weekly_returns"] #retorno del último mes
-    #last_12_months_returns = four_week_packs.iloc[-13:-1] #últimos 12 packs de 4 semanas
+    med_mensual = monthly_return_pct.iloc[-13:-1].median() #media mensual
+    desvio_semanal = weekly_returns_pct.iloc[-56:-4].std() #desvio semanal
 
-    #obtengo data de las últimas 52 semanas sin contar las últimas 4
-    med = weekly_returns.iloc[-56:-4].median()
-    ds = weekly_returns.iloc[-56:-4].std()
-
-    print(weekly_returns)
-    print(stock, last_month_return, med*4, ds*np.sqrt(4))
-    standarized = (last_month_return - med*4) / ds*np.sqrt(4)
+    standarized = (last_month_return - med_mensual) / desvio_semanal*np.sqrt(4)
     return standarized
-
 def get_standarized_trimestral_return(df, stock):
     current_day_of_week = df[stock].index[-1].day_name()  # nombre de dia de semana
     starting_day = current_day_of_week[:3]  # tomo las primeras 3 letras
 
-    weekly_returns = df[stock].resample('W-' + starting_day, closed='right').last().pct_change()
-    last_65_weeks_returns = weekly_returns.iloc[-65:]
-
-    # numeric index, Date and weekly_returns
-    thirteen_week_packs = create_13week_from_weeks(stock, last_65_weeks_returns)  # dejar el último al final nuevamente
-    last_3months_return = thirteen_week_packs.iloc[-1]["weekly_returns"]  # no cuento el current mes
+    weekly_returns = df[stock].resample('W-' + starting_day, closed='right').last()
+    weekly_returns_pct = df[stock].resample('W-' + starting_day, closed='right').last().pct_change()
+    last_65_weeks_returns = weekly_returns_pct.iloc[-65:]
+    last_13weeks_returns = weekly_returns.iloc[-1] / weekly_returns.iloc[-13] -1
 
     #med y ds de las últimas 65 semanas sin contar las últimas 13
-    med = weekly_returns.iloc[-65:-13].median()
-    ds = weekly_returns.iloc[-65:-13].std()
+    med = weekly_returns_pct.iloc[-65:-13].median()
+    ds = weekly_returns_pct.iloc[-65:-13].std()
 
-    #print(stock, last_3months_return, med*13, ds*np.sqrt(4))
+    #print(stock, last_13weeks_returns, med*13, ds*np.sqrt(13))
 
-    standarized = (last_3months_return - med*13) / ds * np.sqrt(13)
+    standarized = (last_13weeks_returns - med*13) / ds * np.sqrt(13)
     return standarized
-
 def create_4week_from_weeks(stock, weekly_returns):
     num_rows = len(weekly_returns)
 
@@ -220,7 +206,6 @@ def create_4week_from_weeks(stock, weekly_returns):
     four_week_packs.set_index('Date', inplace=True)
     #print(four_week_packs)
     return four_week_packs
-
 def create_13week_from_weeks(stock, weekly_returns):
     num_rows = len(weekly_returns)
 

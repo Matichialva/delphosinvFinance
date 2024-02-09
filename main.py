@@ -24,7 +24,7 @@ sectorStockDict = {
 hoy = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
 df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=hoy, freq="B")) #freq B -> business days
 
-df = add_data_dataframe(stocks, df) #lleno el df con data de cada stock
+df = add_data_dataframe(stocks, df, max) #lleno el df con data de cada stock
 cleaning_dataframe(df) #función que limpia datos
 df.to_excel("stocks_test.xlsx", index=True) #lo paso a un excel
 '''
@@ -32,7 +32,7 @@ df.to_excel("stocks_test.xlsx", index=True) #lo paso a un excel
 df = pd.read_excel("stocks_test.xlsx", index_col="Date")
 
 #creo DF vacía.
-percentageDF = pd.DataFrame(index = df.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "3Mdesvios", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9", "Sector"]) #quiero las stocks a la izquierda
+percentageDF = pd.DataFrame(index = df.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9", "Sector"]) #quiero las stocks a la izquierda
 percentageDF.index.name = "Stock"
 
 percentageDF = add_sectors(sectorStockDict, percentageDF) #add stock's sectors
