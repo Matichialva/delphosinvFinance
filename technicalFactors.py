@@ -69,8 +69,20 @@ percentageDF.to_excel("sp500PercentageDataframe.xlsx", index=True)
 percentageDF = pd.read_excel("sp500PercentageDataframe.xlsx", index_col="Stock")
 
 #################################armo factorsDF##########################################
-factorsDF = pd.DataFrame(index=sp500tickers, columns=["DividendYield (%)", "netDebt/EV (%)", "marketCap (M)", "volatility20r (%)", "Momentum (1m vs 4m)", "Beta (3y)"])
+'''factorsDF = pd.DataFrame(index=sp500tickers, columns=["DividendYield (%)", "netDebt/EV (%)", "marketCap (M)", "volatility20r (%)", "Momentum (1m vs 4m)", "Beta (3y)"])
 factorsDF.index.name = "Ticker"
 factorsDF = add_factors(factorsDF, pricesDF, percentageDF, balanceDF)
+factorsDF.to_excel("sp500factorsDF.xlsx", index=True)'''
 
-factorsDF.to_excel("sp500factorsDF.xlsx", index=True)
+factorsDF = pd.read_excel("sp500factorsDF.xlsx", index_col="Ticker")
+###################armo topDownFactorsDF###################
+factors = ["DividendYield (%)", "netDebt/EV (%)", "marketCap (M)", "volatility20r (%)", "Momentum (1m vs 4m)", "Beta (3y)"]
+ranges = ["30% top", "30% bottom"]
+time_frames = ["1D", "1W", "1M", "3M", "6M", "YTD"]
+
+
+topDownFactorsDF = pd.DataFrame(index= pd.MultiIndex.from_product([factors, ranges], names=['factor', 'ranges']), columns = time_frames)
+topDownFactorsDF = add_factors_to_topdown(topDownFactorsDF, factorsDF, pricesDF, percentageDF)
+topDownFactorsDF.to_excel("sp500topDownFactorsDF.xlsx", index=True)
+
+
