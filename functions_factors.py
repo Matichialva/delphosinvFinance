@@ -2,7 +2,79 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 from datetime import datetime
-from functions_dataframe import *
+from functions_etfReturns import *
+
+def fetch_stock_prices(tickers):
+    # ARMO PRICESDF
+    tickers.insert(0, "^SPX")
+
+    # dataframe con precios de tickers del sp500
+    hoy = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+    pricesDF = pd.DataFrame(index=pd.date_range(start=datetime(2022, 1, 1), end=hoy, freq="B"))  # freq B -> business days
+
+    pricesDF = add_data_dataframe(tickers, pricesDF, "5y")  # lleno el df con data de cada stock
+    cleaning_dataframe(pricesDF)  # función que limpia datos
+
+    tickers.remove('^SPX')
+
+    return pricesDF
+
+def calculate_percentage_dataframe(tickers, pricesDF):
+    # ARMO PERCENTAGEDF
+    # dataframe con retornos de empresas del sp500 (en la lista)
+    percentageDF = pd.DataFrame(index=tickers, columns=["1D", "1W", "1M", "3M", "6M", "YTD"])
+    percentageDF.index.name = "Stock"
+
+    for stock in pricesDF.columns:  # para cada stock
+        if stock == '^SPX':
+            continue
+        pricesDF.index = pd.to_datetime(pricesDF.index)
+        currentDate = pricesDF.index[-1]
+        current = pricesDF[stock].loc[currentDate]  # last price in the stock column
+
+        period_dict_days = {"1D": 1, "1W": 7, "1M": 28, "3M": 91}
+        for periodKey, periodValue in period_dict_days.items():  # para cada período
+            pastDate = find_previous_closest_date(currentDate - pd.DateOffset(days=periodValue), pricesDF)
+            past = pricesDF[stock].loc[pastDate]  # calculo valor en ese momento
+            priceChange = (current - past) / past * 100  # calculo el porcentaje de cambio de precio
+            if priceChange == 0:  # caso donde la bolsa todavia no operó hoy, comparo ayer con anteayer
+                pastDate = find_previous_closest_date(currentDate - pd.DateOffset(days=2), pricesDF)
+                past = pricesDF[stock].loc[pastDate]  # calculo valor en ese momento
+                priceChange = (current - past) / past * 100  # calculo el porcentaje de cambio de precio
+            percentageDF.loc[stock, periodKey] = round(priceChange, 1)  # agrego al dataframe
+
+        period_dict_months = {"6M": 6}
+        for periodKey, periodValue in period_dict_months.items():  # para cada período
+            pastDate = find_previous_closest_date(currentDate - pd.DateOffset(months=periodValue), pricesDF)
+            past = pricesDF[stock].loc[pastDate]  # calculo valor en ese momento
+            priceChange = (current - past) / past * 100  # calculo el porcentaje de cambio de precio
+            percentageDF.loc[stock, periodKey] = round(priceChange, 1)  # agrego al dataframe
+
+        # grab the day before the first day of the actual year
+        ytdDate = datetime(currentDate.year - 1, 12, 31)
+        ytdValue = pricesDF[stock].loc[find_previous_closest_date(ytdDate, pricesDF)]
+        ytdPriceChange = (current - ytdValue) / ytdValue * 100
+        percentageDF.loc[stock, "YTD"] = round(ytdPriceChange, 1)
+
+    return percentageDF
+
+def calculate_factors_dataframe(tickers, pricesDF, percentageDF, balanceDF):
+    factorsDF = pd.DataFrame(index=tickers,
+                             columns=["DividendYield (%)", "netDebt/EV (%)", "marketCap (M)", "volatility20r (%)",
+                                      "Momentum (1m vs 4m)", "Beta (3y)"])
+    factorsDF.index.name = "Ticker"
+    factorsDF = add_factors(factorsDF, pricesDF, percentageDF, balanceDF)
+    return factorsDF
+
+def calculate_top_down_factors(factorsDF, pricesDF, percentageDF):
+    factors = ["DividendYield (%)", "netDebt/EV (%)", "marketCap (M)", "volatility20r (%)", "Momentum (1m vs 4m)",
+               "Beta (3y)"]
+    ranges = ["30% top", "30% bottom"]
+    time_frames = ["1D", "1W", "1M", "3M", "6M", "YTD"]
+    topDownFactorsDF = pd.DataFrame(index=pd.MultiIndex.from_product([factors, ranges], names=['factor', 'ranges']),
+                                    columns=time_frames)
+    topDownFactorsDF = add_factors_to_topdown(topDownFactorsDF, factorsDF, pricesDF, percentageDF)
+    return topDownFactorsDF
 
 def add_factors(factorsDF, pricesDF, percentageDF, balanceDF):
 
@@ -31,11 +103,11 @@ def add_factors(factorsDF, pricesDF, percentageDF, balanceDF):
         beta = calculate_beta(pricesDF, ticker)
 
         # agrego factores a factorsDF
-        add_factors_to_df(factorsDF, dividend_yield, netDebt_enterpriseValue, market_cap, volatility, momentum, beta)
+        add_factors_to_df(ticker, factorsDF, dividend_yield, netDebt_enterpriseValue, market_cap, volatility, momentum, beta)
 
     return factorsDF
 
-def add_factors_to_df(factorsDF, dividend_yield, netDebt_enterpriseValue, market_cap, volatility, momentum, beta):
+def add_factors_to_df(ticker, factorsDF, dividend_yield, netDebt_enterpriseValue, market_cap, volatility, momentum, beta):
     factorsDF.loc[ticker, "DividendYield (%)"] = dividend_yield
     factorsDF.loc[ticker, "netDebt/EV (%)"] = netDebt_enterpriseValue
     factorsDF.loc[ticker, "marketCap (M)"] = market_cap
@@ -84,7 +156,6 @@ def calculate_beta(pricesDF, ticker):
     beta = covariance / market_variance
 
     return round(beta, 2)
-
 
 def add_factors_to_topdown(topDownFactorsDF, factorsDF, pricesDF, percentageDF):
     factors = ["DividendYield (%)", "netDebt/EV (%)", "marketCap (M)", "volatility20r (%)", "Momentum (1m vs 4m)", "Beta (3y)"]

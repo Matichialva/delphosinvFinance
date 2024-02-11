@@ -19,6 +19,7 @@ def cleaning_dataframe(df):
     df.ffill(inplace=True) #relleno los vacios con el valor del de arriba
     df.dropna(how="all", inplace=True) #si hay filas completamente vacias, funalas
     df.index = df.index.strftime("%Y-%m-%d")
+    return df
 
 def add_price_changes(df, percentageDF):
     '''given a dataframe with dates as index and columns for stocks, uses that information
