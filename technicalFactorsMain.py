@@ -23,8 +23,8 @@ def main():
     #create percentageDF and save the percentage dataframe
     percentageDF = calculate_percentage_dataframe(sp500tickers, pricesDF)
     returns_file_path = os.path.join("technicalFactorsExcel", "sp500Returns.xlsx")
-    percentageDF.to_excel(prices_file_path, index=True)
-    percentageDF = pd.read_excel(prices_file_path, index_col="Stock")
+    percentageDF.to_excel(returns_file_path, index=True)
+    percentageDF = pd.read_excel(returns_file_path, index_col="Stock")
 
     #create and save factors dataframe
     factorsDF = calculate_factors_dataframe(sp500tickers, pricesDF, percentageDF, balanceDF)
@@ -34,7 +34,9 @@ def main():
 
     topDownFactorsDF = calculate_top_down_factors(factorsDF, pricesDF, percentageDF)
     topDownFactors_file_path = os.path.join("technicalFactorsExcel", "sp500topDownFactors.xlsx")
-    topDownFactorsDF.to_excel(topDownFactors_file_path, index=True)
+    topDownFactorsDF = style_dataframe(topDownFactorsDF, ["1D", "1W", "1M", "3M", "6M", "YTD"])
+    topDownFactorsDF.to_excel(topDownFactors_file_path, index=True, options={'autosize':True})
+
 
 if __name__ == "__main__":
     main()
