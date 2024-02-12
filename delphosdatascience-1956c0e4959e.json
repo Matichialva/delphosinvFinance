@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "delphosdatascience",
+  "private_key_id": "1956c0e4959e5377e9c10bcc4a3ffcd3ec918250",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQD2a9g8rPVIMZJ+\nzR87CayFhChbrh8xUGoivGFyOQDJwuiC+JakY6NOlsGXlCVz4FJzeqCHCnDDijIW\nbwEdjcenXZGsnPSAmXFZpS5jGxG98dym/STEXDORSIRckj4I95fSM9gjmDqbw5aB\n/TZLHfIBpjk1GMyGQ+tK6S28hCgQnK/ESZITzOC9ZwBK8M/YQfjak5L4gfUGuc8I\nmIJo7XoXO99XNiY4aGU0OKgbsOr5kWV9JIc6PAW0Pl7u8+jMRm3nh4nvlBFmF3Y7\nbk53XjJ3cQ/fZC+XbNPGaE8UyulL+WfgfWaVA1rJLmHqioS+vd9+2doVVAKa6TZG\nS2aoRKPJAgMBAAECggEAOo9H4Klwk8K2D9yioJbMsSEGLz1ai89SnaUbWjfaLFhd\nhWxabkAAaddxM5qg6N/k8Czy04yjXhCsFQE1qGaOTQNzMCxPfXUZhwZ2VtZyuast\ntuBfGavYlFzBmbcmN17RbUJlSZYuTWBmVsdMHP9FiOdN3oShbAHde1ydAhj85W9D\nhKOGs8JyJr3Ua5E1yskWQMO5txsPd5IqekNwV/htHdrILF1QSxcG4jhiRKOgmhWa\nAvM2OtnAFveZ1zAzGHGJxnoYhtOt7pIc7wEYhxf7sEdU2skb3EA9p3xWv+FecJkk\nrolqmDNqs4/XZ6NELwmTX56G49ha11cSY6wyL7PtpQKBgQD7Kpw8ur8ZxTlB1gU2\nYPMzyCNA7uS93FB2+1PFK2gnovrrET77PWtazvTJ/83fLxq8lwTIyxmwBHsiqiFr\ndaBLP0pfOJYMR8x2cZ+UjkiMoeDhqcwxswWt5jhhp5FwhU2xfAL+Xxj8L2/wYtkf\n0t74md2Fl6ogcWl44USU0tZknQKBgQD7KdtecPazWjpfmjPIUAt8oXs7KeFbAVcq\n4g9ixCzw4I2Z7Uk3dT6Vyvq4r0p4YpaUYEEVjBF/7EgvJrIpKyD36EsfRHcp1Mvq\n4+4fAF0kRTrzUP3IMYzWGfLErcrv+fdjxFoKKYNoR0beyBAka5B9JC5Lohr6U3LZ\nYR8RL2DWHQKBgQD2KUnc/04iTLiUPNT4+cYCPynGDxzis5WtNx9gA+3dww9W6Z0n\nkYexBVrGy04TalAy+3P185Bmgc3JKKL+ddc3SH10m7n7qTbL8wprB5Q1OMZ1hPwa\nzZFIYXVqyFdzx0JhK+CnO776EugL2mVgmkRrtCl3MDDOATlU/rs/fPAgxQKBgQCf\nnoBNytjeLu9+Jo/WNBi4wh+BACK6JWXyWOySRj6RbwRO2OB5IEgABpnEmZJoY69y\n6KE0Qmo0tENDxAHh7AjtxHFJk8dvjE90HhsNFLwc+up2C/jdK7BnuOHyYMjiLigs\n/XKDltJuiS3fE6I+oyWWglHxuzoN8M7Cm9iUoVmXeQKBgQCZaeE/YvNokI2QVtN6\nbx8IM7U0c4Nbm0pzNY7hYlNli12FeD209fqrT9UPKIOyQ3TZ5pdtahggQE6AzawW\nU/ODT7gNXDswRZLJjL0/6TNyhyII3LBsa2PYn35eA28n+bKJ+zc0cC/y6WIciUul\nt5tUkamVH5MKRmeqTeirBum47A==\n-----END PRIVATE KEY-----\n",
+  "client_email": "drive-admin@delphosdatascience.iam.gserviceaccount.com",
+  "client_id": "116162852138993137672",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/drive-admin%40delphosdatascience.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

@@ -5,6 +5,10 @@ import numpy as np
 from functions_etfReturns import *
 from datetime import datetime
 
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from oauth2client.service_account import ServiceAccountCredentials
+
 def main():
     stocks = ["UUP", "UDN", "CEW", "DBP", "GLD", "SLV", "PPLT", "DBE", "DBO", "UNG", "DBB", "CPER", "PALL", "DBA", "WEAT", "CANE", "CORN", "SOYB", "SPY", "EWC", "EWO", "EWK", "EDEN", "EFNL", "EWQ", "EWG", "GREK", "EIRL", "EWI", "EWN", "ENOR", "PGAL", "EWP", "EWD", "EWL", "EWU", "EIS", "EWA", "EWH", "EWJ", "ENZL", "EWS", "EWW", "EWZ", "ECH", "GXG", "EPU", "INDA", "MCHI", "CNYA", "EIDO", "EWY", "EWM", "EPHE", "EWT", "THD", "EPOL", "TUR", "EZA", "XLE", "OIH", "XOP", "XLU", "XLP", "FTXG", "XLY", "XHB", "XRT", "XLRE", "XTL", "XLI", "ITA", "XTN", "XLV", "XHE", "XHS", "BBH", "PPH", "XLK", "SMH", "XSW", "XLB", "XME", "GDX", "SIL", "SLX", "XLF", "KCE", "KBE", "KRE", "IAK", "DIA", "XLG", "IWB", "IWM", "IWC", "SPYG", "SPYD", "SPYV", "SDY", "VIG", "PFF", "QUAL", "MTUM", "ESGU", "SUSL", "ESML", "SPHB", "BTAL", "SPLV", "BNDD", "INFL", "EMB", "LEMB", "LQD", "LQDH", "HYG", "HYGH"]
     sectorStockDict = {
@@ -20,16 +24,18 @@ def main():
 
     #-----------------dataframe con precios diarios----------------------
     #DF vacío, índice = date, donde va desde 1800 hasta hoy.
-    df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=datetime.today().replace(hour=0, minute=0, second=0, microsecond=0), freq="B")) #freq B -> business days
-    df = add_data_dataframe(stocks, df, "max") #lleno el df con data de cada stock
-    df = cleaning_dataframe(df) #función que limpia datos
+
+    #df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=datetime.today().replace(hour=0, minute=0, second=0, microsecond=0), freq="B")) #freq B -> business days
+    #df = add_data_dataframe(stocks, df, "max") #lleno el df con data de cada stock
+    #df = cleaning_dataframe(df) #función que limpia datos
 
     prices_file_path = os.path.join("etfReturnsExcel", "etfPrices.xlsx")
-    df.to_excel(prices_file_path, index=True) #lo paso a un excel
+    #df.to_excel(prices_file_path, index=True) #lo paso a un excel
     df = pd.read_excel(prices_file_path, index_col="Date")
 
     #-----------------dataframe con retornos----------------------
     #creo percentageDF
+
     percentageDF = pd.DataFrame(index = df.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9", "Sector"]) #quiero las stocks a la izquierda
     percentageDF.index.name = "Stock"
 
