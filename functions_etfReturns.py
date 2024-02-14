@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import time
 
 def add_data_dataframe(stocks, df, periodo):
     '''given a list of stocks and a dataframe, downloads the "Close" price
@@ -95,11 +96,20 @@ def add_sectors(sectorStockDict, percentageDF):
         percentageDF.loc[stock, "Sector"] = sector
     return percentageDF
 
+def color_red_green(val):
+    color = 'red' if val < 0 else 'green' if val > 0 else 'black'
+    return f'color:{color}'
+
+def style_dataframe_red_green(notStyledDF, columnsIncluded):
+    '''applyies red/green values to the dataframe and columns given'''
+    stylePercentageDF = notStyledDF.style.applymap(color_red_green)
+    return stylePercentageDF
+
 def style_dataframe(notStyledDF, columnsIncluded):
     '''applyies gradient to the dataframe and columns given'''
-    stylePercentageDF = notStyledDF.style.background_gradient(subset=columnsIncluded, cmap='RdYlGn',
-                                                               axis=0)  # applied by column not row
+    stylePercentageDF = notStyledDF.style.background_gradient(subset=columnsIncluded, cmap='RdYlGn', axis=0)  # applied by column not row
     return stylePercentageDF
+
 
 def find_previous_closest_date(current_date, df):
     closest_date = None

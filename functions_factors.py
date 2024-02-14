@@ -192,7 +192,7 @@ def add_factors_to_topdown(topDownFactorsDF, factorsDF, pricesDF, percentageDF):
                 if not np.isnan(ticker_return):
                     top_returns = np.append(top_returns, ticker_return) #lo agrego a lista de retornos
             top_returns_mean = top_returns.mean()   #saco la media de todos los retornos de lista top
-            topDownFactorsDF.loc[(factor, "30% top"), time] = top_returns_mean  #añado al dataframe
+            topDownFactorsDF.loc[(factor, "30% top"), time] = round(top_returns_mean, 2)  #añado al dataframe
 
             # para cada ticker del bottom, agrego su retorno a la lista
             for bottom_ticker in bottom_tickers:
@@ -200,6 +200,6 @@ def add_factors_to_topdown(topDownFactorsDF, factorsDF, pricesDF, percentageDF):
                 if not np.isnan(ticker_return):
                     bottom_returns.append(ticker_return) # lo agrego a lista de retornos
             bottom_returns_mean = sum(bottom_returns)/len(bottom_returns) # saco la media de todos los retornos de lista top
-            topDownFactorsDF.loc[(factor, "30% bottom"), time] = bottom_returns_mean # añado al dataframe
+            topDownFactorsDF.loc[(factor, "30% bottom"), time] = round(bottom_returns_mean, 2) # añado al dataframe
 
     return topDownFactorsDF

@@ -34,8 +34,8 @@ def main():
 
     topDownFactorsDF = calculate_top_down_factors(factorsDF, pricesDF, percentageDF)
     topDownFactors_file_path = os.path.join("technicalFactorsExcel", "sp500topDownFactors.xlsx")
-    topDownFactorsDF = style_dataframe(topDownFactorsDF, ["1D", "1W", "1M", "3M", "6M", "YTD"])
-    topDownFactorsDF.to_excel(topDownFactors_file_path, index=True, options={'autosize':True})
+    topDownFactorsDF = style_dataframe_red_green(topDownFactorsDF, ["1D", "1W", "1M", "3M", "6M", "YTD"])
+    topDownFactorsDF.to_excel(topDownFactors_file_path, index=True)
 
 
 if __name__ == "__main__":
