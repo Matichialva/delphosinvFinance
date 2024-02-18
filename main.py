@@ -12,6 +12,8 @@ from oauth2client.service_account import ServiceAccountCredentials
 import etfReturnsMain
 import technicalindicatorsMain
 import technicalFactorsMain
+import latamReturns
+import latamRatios
 
 def upload_to_google_drive(file_path):
     '''sube a google drive el archivo encontrado en el filepath que se pasa.'''
@@ -30,7 +32,7 @@ def upload_to_google_drive(file_path):
     folder_id = '1kUPSl_Zuzv6iBYIR0_M9H_SnPUUGIIEA'
 
 
-    existing_files = drive.ListFile({'q': f"{folder_id} in parents and title = '{os.path.basename(file_path)}' and trashed=false"}).GetList()
+    existing_files = drive.ListFile({'q': f"'{folder_id}' in parents and title contains '{os.path.basename(file_path)}' and trashed=false"}).GetList()
     for existing_file in existing_files:
         existing_file.Trash()
 
@@ -44,18 +46,33 @@ def upload_to_google_drive(file_path):
 if __name__ == "__main__":
 
     #armo y agrego etfReturns
-    #etfReturnsMain.main()
+    etfReturnsMain.main()
     returns_file_path = os.path.join("etfReturnsExcel", "etfReturns.xlsx")
     upload_to_google_drive(returns_file_path)
 
     #armo y agrego technicalIndicators
-    #technicalindicatorsMain.main()
+    technicalindicatorsMain.main()
     indicators_file_path = os.path.join("technicalIndicatorsExcel", "etfIndicators.xlsx")
     upload_to_google_drive(indicators_file_path)
 
     #armo y agrego technical factors
-    #technicalFactorsMain.main()
+    technicalFactorsMain.main()
     topDownFactors_file_path = os.path.join("technicalFactorsExcel", "sp500topDownFactors.xlsx")
     upload_to_google_drive(topDownFactors_file_path)
+
+    latamReturns.main()
+    latam_returns_file_path = os.path.join("latamReturns&Ratios", "latamReturns.xlsx")
+    upload_to_google_drive(latam_returns_file_path)
+
+    latamRatios.main()
+    latam_country_ratios_file_path = os.path.join("latamReturns&Ratios", "latamCountriesRatios.xlsx")
+    latam_industry_ratios_file_path = os.path.join("latamReturns&Ratios", "latamIndustryRatios.xlsx")
+    upload_to_google_drive(latam_country_ratios_file_path)
+    upload_to_google_drive(latam_industry_ratios_file_path)
+
+
+
+
+
 
 
