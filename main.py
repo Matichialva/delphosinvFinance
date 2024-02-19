@@ -1,4 +1,11 @@
 import os
+
+# Get the path of the current script
+script_path = os.path.realpath(__file__)
+
+# Change the working directory to the script's directory
+os.chdir(os.path.dirname(script_path))
+
 import yfinance as yf
 import pandas as pd
 import numpy as np

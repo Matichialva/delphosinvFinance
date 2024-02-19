@@ -23,7 +23,7 @@ def main():
     df.to_excel(prices_file_path, index=True) #lo paso a un excel
 
     #-----------------dataframe con porcentajes----------------------
-    df = pd.read_excel(prices_file_path, index_col="Date")
+    df = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     indicatorsDF = pd.DataFrame(index=df.columns, columns=["current/200media", "50media/200media", "current/min(52 weeks)", "current/max(52 weeks)", "RSI7d", "RSI14d", "RSI21d", "RSI70d", "MACD", "signal"])
     indicatorsDF.index.name = "Stock"

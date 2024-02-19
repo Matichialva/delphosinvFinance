@@ -16,11 +16,11 @@ def main():
 
     #read pricesDF to avoid running it again.
     prices_file_path = os.path.join("latamReturns&Ratios", "latamPrices.xlsx")
-    pricesDF = pd.read_excel(prices_file_path, index_col="Date")
+    pricesDF = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     #read latamTickers
     latam_files_path = os.path.join("latamReturns&Ratios", "latamTickers.xlsx")
-    latamTickers = pd.read_excel(latam_files_path)
+    latamTickers = pd.read_excel(latam_files_path, "openpyxl")
 
     #lista de tickers
     tickers = latamTickers['TICKER'].tolist()

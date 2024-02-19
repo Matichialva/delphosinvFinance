@@ -11,7 +11,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 def main():
     latam_files_path = os.path.join("latamReturns&Ratios", "latamTickers.xlsx")
-    latamTickers = pd.read_excel(latam_files_path)
+    latamTickers = pd.read_excel(latam_files_path, engine="openpyxl")
 
     stocks = latamTickers['TICKER'].tolist() #lista de tickers
 
@@ -21,7 +21,7 @@ def main():
 
     prices_file_path = os.path.join("latamReturns&Ratios", "latamPrices.xlsx")
     pricesDF.to_excel(prices_file_path, index=True) #lo paso a un excel
-    pricesDF = pd.read_excel(prices_file_path, index_col="Date")
+    pricesDF = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     percentageDF = pd.DataFrame(index = pricesDF.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9", "Sector"]) #quiero las stocks a la izquierda
     percentageDF.index.name = "Stock"

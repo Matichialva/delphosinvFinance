@@ -9,7 +9,7 @@ from functions_factors import *
 def main():
     # dataframe with balance sheet data
     balance_file_path = os.path.join("technicalFactorsExcel", "sp500balanceSheet.xlsx")
-    balanceDF = pd.read_excel(balance_file_path, sheet_name="Hoja1", index_col="Ticker")
+    balanceDF = pd.read_excel(balance_file_path, sheet_name="Hoja1", index_col="Ticker", engine="openpyxl")
 
     # list of tickers
     sp500tickers = balanceDF.index.tolist()
@@ -18,19 +18,19 @@ def main():
     pricesDF = fetch_stock_prices(sp500tickers)
     prices_file_path = os.path.join("technicalFactorsExcel", "sp500Prices.xlsx")
     pricesDF.to_excel(prices_file_path, index=True)  # lo paso a un excelprint(pricesDF)
-    pricesDF = pd.read_excel(prices_file_path, index_col="Date")
+    pricesDF = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     #create percentageDF and save the percentage dataframe
     percentageDF = calculate_percentage_dataframe(sp500tickers, pricesDF)
     returns_file_path = os.path.join("technicalFactorsExcel", "sp500Returns.xlsx")
     percentageDF.to_excel(returns_file_path, index=True)
-    percentageDF = pd.read_excel(returns_file_path, index_col="Stock")
+    percentageDF = pd.read_excel(returns_file_path, index_col="Stock", engine="openpyxl")
 
     #create and save factors dataframe
     factorsDF = calculate_factors_dataframe(sp500tickers, pricesDF, percentageDF, balanceDF)
     factors_file_path = os.path.join("technicalFactorsExcel", "sp500Factors.xlsx")
     factorsDF.to_excel(factors_file_path, index=True)
-    factorsDF = pd.read_excel(factors_file_path, index_col="Ticker")
+    factorsDF = pd.read_excel(factors_file_path, index_col="Ticker", engine="openpyxl")
 
     topDownFactorsDF = calculate_top_down_factors(factorsDF, pricesDF, percentageDF)
     topDownFactors_file_path = os.path.join("technicalFactorsExcel", "sp500topDownFactors.xlsx")

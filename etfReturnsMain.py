@@ -31,7 +31,7 @@ def main():
 
     prices_file_path = os.path.join("etfReturnsExcel", "etfPrices.xlsx")
     #df.to_excel(prices_file_path, index=True) #lo paso a un excel
-    df = pd.read_excel(prices_file_path, index_col="Date")
+    df = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     #-----------------dataframe con retornos----------------------
     #creo percentageDF
