@@ -25,27 +25,45 @@ def main():
     #-----------------dataframe con precios diarios----------------------
     #DF vacío, índice = date, donde va desde 1800 hasta hoy.
 
-    #df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=datetime.today().replace(hour=0, minute=0, second=0, microsecond=0), freq="B")) #freq B -> business days
-    #df = add_data_dataframe(stocks, df, "max") #lleno el df con data de cada stock
-    #df = cleaning_dataframe(df) #función que limpia datos
+    df = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=datetime.today().replace(hour=0, minute=0, second=0, microsecond=0), freq="B")) #freq B -> business days
+    df = add_data_dataframe(stocks, df, "max") #lleno el df con data de cada stock
+    df = cleaning_dataframe(df) #función que limpia datos
 
     prices_file_path = os.path.join("etfReturnsExcel", "etfPrices.xlsx")
-    #df.to_excel(prices_file_path, index=True) #lo paso a un excel
+    df.to_excel(prices_file_path, index=True) #lo paso a un excel
     df = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     #-----------------dataframe con retornos----------------------
     #creo percentageDF
 
-    percentageDF = pd.DataFrame(index = df.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9", "Sector"]) #quiero las stocks a la izquierda
-    percentageDF.index.name = "Stock"
+    percentageDF = pd.DataFrame(index = df.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9"]) #quiero las stocks a la izquierda
+    percentageDF.index.name = "Ticker"
 
-    percentageDF = add_sectors(sectorStockDict, percentageDF) #add stock's sectors
+    #percentageDF = add_sectors(sectorStockDict, percentageDF) #add stock's sectors
     percentageDF = add_price_changes(df, percentageDF) #add price changes
 
     #aplico gradiente colorido
     columnsExcluded = ["Stock", "Sector"]
     columnsIncluded = percentageDF.columns.difference(columnsExcluded)
-    stylePercentageDF = style_dataframe(percentageDF, columnsIncluded)
+
+    #create multiindex
+    multiindex_tuples = [(sector, ticker) for sector, tickers in sectorStockDict.items() for ticker in tickers]
+    multiindex_df = pd.DataFrame(index=pd.MultiIndex.from_tuples(multiindex_tuples, names=['Sector', 'Ticker']))
+    multiindex_df.to_excel("multiindex.xlsx", index=True)
+
+    result_df = pd.merge(multiindex_df, percentageDF, left_on=['Ticker'], right_index=True, how='left')
+
+    # harcodeado para q quede el cero como midpoint.
+    stylePercentageDF = (result_df.style
+                         .background_gradient(subset=["1D"], cmap='RdYlGn', axis=0, vmin=-3, vmax=3)
+                         .background_gradient(subset=["1D", "1W", "1M"], cmap='RdYlGn', axis=0, vmin=-7, vmax=7)
+                         .background_gradient(subset=["1Ddesvios", "1Wdesvios", "1Mdesvios"], cmap='RdYlGn', axis=0,
+                                              vmin=-3, vmax=3)
+                         .background_gradient(subset=["3M", "MTD", "QTD", "YTD"], cmap='RdYlGn', axis=0, vmin=-15,
+                                              vmax=15)
+                         .background_gradient(subset=["6M", "1Y", "2Y", "3Y", "2022/12/9"], cmap='RdYlGn', axis=0,
+                                              vmin=-50, vmax=50)
+                         )
 
     returns_file_path = os.path.join("etfReturnsExcel", "etfReturns.xlsx")
     stylePercentageDF.to_excel(returns_file_path, index=True) #lo paso a un excel

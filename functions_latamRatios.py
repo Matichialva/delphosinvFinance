@@ -84,7 +84,7 @@ def create_ratios_dataframe_every_combination(dictionary, pricesDF):
     return ratios_dataframe
 
 def create_ratios_desvios(ratios_date_dataframe, ratios):
-    ratios_desvio_dataframe = pd.DataFrame(index=ratios, columns=["Desvio1Y"])
+    ratios_desvio_dataframe = pd.DataFrame(columns=["ratios", "Desvio1Y"])
 
     for ratio in ratios:
         ratio_data = ratios_date_dataframe[ratio].iloc[:-1]
@@ -178,17 +178,24 @@ def filter_by_country_and_appearances_combinations(dataframe, country_ticker_dic
 
     return filtered_dataframe
 
+def generate_pastel_color():
+    # Generate a pastel color by randomly choosing RGB values with reduced saturation
+    r = random.randint(200, 255)
+    g = random.randint(200, 255)
+    b = random.randint(200, 255)
+    return f'#{r:02X}{g:02X}{b:02X}'
+
 def style_by_ticker(df):
     def apply_ticker_color(value):
         ticker = value.split('/')[0]
         return f'background-color: {color_map.get(ticker, "FFFFFF")}'
 
     # Extract unique tickers and assign random colors
-    unique_tickers = df.index.str.split('/').str[0].unique().tolist()
-    color_map = {ticker: f'#{random.randint(0, 0xFFFFFF):06X}' for ticker in unique_tickers}
+    unique_tickers = df['ratios'].str.split('/').str[0].unique().tolist()
+    color_map = {ticker: generate_pastel_color() for ticker in unique_tickers}
 
     # Apply styling to the DataFrame
-    styled_df = df.style.applymap(apply_ticker_color, subset=['Ticker1'])
+    styled_df = df.style.applymap(apply_ticker_color, subset=['ratios'])
     return styled_df
 
 def create_industry_tickers_dict(tickers):

@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import time
+import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 def add_data_dataframe(stocks, df, periodo):
     '''given a list of stocks and a dataframe, downloads the "Close" price
@@ -36,7 +38,7 @@ def add_price_changes(df, percentageDF):
             pastDate = find_previous_closest_date(currentDate - pd.DateOffset(days=periodValue), df)
             past = df[stock].loc[pastDate]  # calculo valor en ese momento
             priceChange = (current - past) / past * 100  # calculo el porcentaje de cambio de precio
-            if priceChange == 0: #caso donde la bolsa todavia no operó hoy, comparo ayer con anteayer
+            if (priceChange == 0) and (periodKey == "1D"): #caso donde la bolsa todavia no operó hoy, comparo ayer con anteayer
                 pastDate = find_previous_closest_date(currentDate - pd.DateOffset(days=2), df)
                 past = df[stock].loc[pastDate]  # calculo valor en ese momento
                 priceChange = (current - past) / past * 100  # calculo el porcentaje de cambio de precio
@@ -97,18 +99,72 @@ def add_sectors(sectorStockDict, percentageDF):
     return percentageDF
 
 def color_red_green(val):
-    color = 'red' if val < 0 else 'green' if val > 0 else 'black'
-    return f'color:{color}'
+    if val < 0:
+        return 'background-color: red'
+    elif val > 0:
+        return 'background-color: green'
+    else:
+        return 'background-color: black'
 
 def style_dataframe_red_green(notStyledDF, columnsIncluded):
     '''applyies red/green values to the dataframe and columns given'''
-    stylePercentageDF = notStyledDF.style.applymap(color_red_green)
+    stylePercentageDF = notStyledDF.style.applymap(lambda x: [color_red_green(v) for v in x], subset=columnsIncluded)
     return stylePercentageDF
 
 def style_dataframe(notStyledDF, columnsIncluded):
     '''applyies gradient to the dataframe and columns given'''
-    stylePercentageDF = notStyledDF.style.background_gradient(subset=columnsIncluded, cmap='RdYlGn', axis=0)  # applied by column not row
+    stylePercentageDF = notStyledDF.style.background_gradient(subset=columnsIncluded, cmap='RdYlGn', axis=0, vmin=-10, vmax=10)  # applied by column not row
     return stylePercentageDF
+
+def style_dataframe_min_max(notStyledDF, columnsIncluded, mini, maxi):
+    '''applyies gradient to the dataframe and columns given'''
+    stylePercentageDF = notStyledDF.style.background_gradient(subset=['1D'], cmap='RdYlGn', axis=0, vmin=mini, vmax=maxi).background_gradient(subset=['3Y'], cmap='RdYlGn', axis=0, vmin=-50, vmax=50)  # applied by column not row
+    return stylePercentageDF
+
+def style_columns(notStyledDF, columnsIncluded):
+    '''applyies gradient to the dataframe and columns given'''
+    styled = notStyledDF.copy()
+
+    for column in columnsIncluded:
+        mini = notStyledDF[column].min()
+        if mini < 0:
+            maxi = -mini
+        else:
+            mini=-10
+            maxi=10
+        styled = styled.style.background_gradient(subset=[column], cmap='RdYlGn', vmin=mini, vmax=maxi)  # applied by column not row
+    return styled
+
+
+
+# Function to apply background gradient
+def color_gradient(column):
+    vmin = column.min()
+    vmax = column.max()
+
+    def apply_gradient(val):
+        if val < 0:
+            red = 255
+            green = 255 + int((val/vmin) * 255)
+            blue = 255 + int((val/vmin) * 255)
+        elif val > 0:
+            red = 255 - int((val/vmax) * 255)
+            green = 255
+            blue = 255 - int((val/vmax) * 255)
+        else:
+            red = 255
+            green = 255
+            blue = 255
+
+        # Ensure RGB values are within the valid range (0 to 255)
+        red = max(0, min(255, red))
+        green = max(0, min(255, green))
+        blue = max(0, min(255, blue))
+
+        return f'background-color: red'
+
+    return column.apply(lambda val: apply_gradient(val))
+
 
 
 def find_previous_closest_date(current_date, df):
