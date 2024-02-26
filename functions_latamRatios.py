@@ -185,7 +185,7 @@ def generate_pastel_color():
     b = random.randint(200, 255)
     return f'#{r:02X}{g:02X}{b:02X}'
 
-def style_by_ticker(df):
+def style_by_ticker(df, column_to_style):
     def apply_ticker_color(value):
         ticker = value.split('/')[0]
         return f'background-color: {color_map.get(ticker, "FFFFFF")}'
@@ -195,7 +195,7 @@ def style_by_ticker(df):
     color_map = {ticker: generate_pastel_color() for ticker in unique_tickers}
 
     # Apply styling to the DataFrame
-    styled_df = df.style.applymap(apply_ticker_color, subset=['ratios'])
+    styled_df = df.style.applymap(apply_ticker_color, subset=[column_to_style])
     return styled_df
 
 def create_industry_tickers_dict(tickers):

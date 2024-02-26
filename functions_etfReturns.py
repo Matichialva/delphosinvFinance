@@ -121,6 +121,41 @@ def style_dataframe_min_max(notStyledDF, columnsIncluded, mini, maxi):
     stylePercentageDF = notStyledDF.style.background_gradient(subset=['1D'], cmap='RdYlGn', axis=0, vmin=mini, vmax=maxi).background_gradient(subset=['3Y'], cmap='RdYlGn', axis=0, vmin=-50, vmax=50)  # applied by column not row
     return stylePercentageDF
 
+
+def highlight_max_between_pairs(data):
+    # Set the background color attribute
+    attr_red = 'background-color: #FFD3D3'  # or 'background-color: #FFA8A8'
+    attr_green = 'background-color: #D3FFD3' # or 'background-color: #A8FFA8'
+
+    # Create an empty list to store True/False values
+    is_max_between_pairs = []
+
+    # Loop through pairs of consecutive elements in the Series
+    for i in range(0, len(data) - 1, 2):
+        # Compare the current pair and highlight the greater value
+        is_max_between_pairs.append(data[i] > data[i + 1])
+        is_max_between_pairs.append(data[i] < data[i + 1])
+
+    # Create a new list with background color attributes
+    formatted_values = []
+    for v in is_max_between_pairs:
+        if v:
+            formatted_values.append(attr_green)
+        else:
+            formatted_values.append(attr_red)
+
+    # Return the list with background color attributes
+    return formatted_values
+
+# Define a function to add a border line after each index
+def add_border_line(index):
+    styles = []
+    for i in range(1, len(index)*2, 2):
+        styles.append({
+            'selector': f'tr:nth-child({i}) td',
+            'props': 'border-right: 2px solid black;'
+        })
+    return styles
 def style_columns(notStyledDF, columnsIncluded):
     '''applyies gradient to the dataframe and columns given'''
     styled = notStyledDF.copy()

@@ -15,12 +15,12 @@ def main():
 
     stocks = latamTickers['TICKER'].tolist() #lista de tickers
 
-    #pricesDF = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=datetime.today().replace(hour=0, minute=0, second=0, microsecond=0), freq="B")) #freq B -> business days
-    #pricesDF = add_data_dataframe(stocks, pricesDF, "max") #lleno el df con data de cada stock
-    #pricesDF = cleaning_dataframe(pricesDF) #función que limpia datos
+    pricesDF = pd.DataFrame(index=pd.date_range(start=datetime(1800, 1, 1), end=datetime.today().replace(hour=0, minute=0, second=0, microsecond=0), freq="B")) #freq B -> business days
+    pricesDF = add_data_dataframe(stocks, pricesDF, "max") #lleno el df con data de cada stock
+    pricesDF = cleaning_dataframe(pricesDF) #función que limpia datos
 
     prices_file_path = os.path.join("latamReturns&Ratios", "latamPrices.xlsx")
-    #pricesDF.to_excel(prices_file_path, index=True) #lo paso a un excel
+    pricesDF.to_excel(prices_file_path, index=True) #lo paso a un excel
     pricesDF = pd.read_excel(prices_file_path, index_col="Date", engine="openpyxl")
 
     #multiindex created

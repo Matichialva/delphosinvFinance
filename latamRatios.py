@@ -42,16 +42,19 @@ def main():
     multi_index_df.sort_index(level=['Country', 'TICKER'],
                               inplace=True)  # sorteo en el orden q me interesa, en base a cual no quiero q se repita
     multi_index_df.drop(columns=['BBG', 'GICS 1', 'GICS 2'], inplace=True)
-    multi_index_df.to_excel("multiindex.xlsx", index=True)
+
 
     latam_countries_ratios.reset_index(inplace=True)
     latam_countries_ratios.columns = ['ratios', 'ticker', 'desvio']
     latam_countries_ratios.set_index('ticker', inplace=True)
 
     result_df = pd.merge(multi_index_df, latam_countries_ratios, left_on=['TICKER'], right_index = True, how='inner')
+    result_df.reset_index(inplace=True)
+    result_df = style_by_ticker(result_df, 'TICKER')
+    result_df = result_df.background_gradient(cmap='RdYlGn', subset=['desvio'], vmin=-4, vmax=4)
 
     #result_df = style_by_ticker(result_df)
-    result_df.to_excel(os.path.join("latamReturns&Ratios", "latamCountriesRatios.xlsx"), engine='openpyxl', index=True)
+    result_df.to_excel(os.path.join("latamReturns&Ratios", "latamCountriesRatios.xlsx"), engine='openpyxl', index=False)
 #########################################################################################################################3
 
     #diccionario industria-ticker
@@ -75,16 +78,19 @@ def main():
     latam_industry_ratios.set_index('ticker', inplace=True)
 
     # multiindex created
-    multi_index_df2 = latamTickers.set_index(['GICS 1', 'TICKER'])  # seteo multiindex
+    multi_index_df2 = latamTickers.set_index(['GICS 1',  'TICKER'])  # seteo multiindex
     multi_index_df2.sort_index(level=['GICS 1', 'TICKER'],
                               inplace=True)  # sorteo en el orden q me interesa, en base a cual no quiero q se repita
-    multi_index_df2.drop(columns=['BBG', 'Country', 'GICS 2'], inplace=True)
-    multi_index_df2.to_excel("multiindex2.xlsx", index=True)
+    multi_index_df2.drop(columns=['BBG', 'GICS 2', 'Country'], inplace=True)
 
     result_df2 = pd.merge(multi_index_df2, latam_industry_ratios, left_on=['TICKER'], right_index = True, how='inner')
+    #result_df2['desvio'] = result_df2['desvio'].map("{:%}".format)
 
-    #result_df2 = style_by_ticker(result_df2)
-    result_df2.to_excel(os.path.join("latamReturns&Ratios", "latamIndustryRatios.xlsx"), engine='openpyxl', index=True)
+    result_df2.reset_index(inplace=True)
+    result_df2 = style_by_ticker(result_df2, 'TICKER')
+    styled = result_df2.background_gradient(cmap='RdYlGn', subset=['desvio'], vmin=-4, vmax=4)
+
+    styled.to_excel(os.path.join("latamReturns&Ratios", "latamIndustryRatios.xlsx"), engine='openpyxl', index=False)
 
 
 
