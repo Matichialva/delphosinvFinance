@@ -1,282 +1,330 @@
-import mplfinance as mpf
-import pandas as pd
-import yfinance as yf  # You can use any other method to get financial data
-
-# Get financial data (replace 'AAPL' and '2023-01-01' with your stock symbol and start date)
-symbol = 'AAPL'
-start_date = '2023-01-01'
-df = yf.download(symbol, start=start_date)
-print(df)
-
-# Create a candlestick chart with a line graph overlay
-fig, ax = mpf.plot(df, type='candle', #plot type
-                   mav=(10, 20), #moving averages
-                   volume=True, #volume subplot
-                   style='yahoo', #color scheme based on yahoo finance
-                   title=f'{symbol} Stock Price with Moving Averages',
-                   ylabel='Price ($)',
-                   ylabel_lower='Volume',
-                   mavcolors=('tab:red','tab:blue'),  # Color for moving averages
-                   figratio=(10, 6),    # Figure size ratio
-                   tight_layout=True)
-
-# Save or show the plot
-mpf.show()
-
-##############################################################3
-'''
-USING NICO'S CODE
-# Function to fetch stock data
-def get_stock_data(ticker, start_date, end_date):
-    stock_data = yf.download(ticker, start=start_date, end=end_date)
-    return stock_data
-
-
-# Function to calculate MAMA and FAMA
-def calculate_mama_fama(data, fast=0.25, slow=0.05):
-    Price = data['Close']
-    FastLimit = fast
-    SlowLimit = slow
-    MAMA = [0] * len(data)  # Initialize as a list
-    FAMA = [0] * len(data)  # Initialize as a list
-    PI = math.pi
-    Smooth = [0.0] * len(data)  # Initialize as a list
-    Detrender = [0.0] * len(data)  # Initialize as a list
-    I1 = [0.0] * len(data)  # Initialize as a list
-    Q1 = [0.0] * len(data)  # Initialize as a list
-    jI = [0.0] * len(data)  # Initialize as a list
-    jQ = [0.0] * len(data)  # Initialize as a list
-    I2 = [0.0] * len(data)  # Initialize as a list
-    Q2 = [0.0] * len(data)  # Initialize as a list
-    Re = [0.0] * len(data)  # Initialize as a list
-    Im = [0.0] * len(data)  # Initialize as a list
-    Period = [0.0] * len(data)  # Initialize as a list
-    SmoothPeriod = [0.0] * len(data)  # Initialize as a list
-    Phase = [0.0] * len(data)  # Initialize as a list
-    DeltaPhase = [0.0] * len(data)  # Initialize as a list
-    alpha = [0.0] * len(data)  # Initialize as a list
-
-    for i in range(len(data)):
-        if math.isnan(Price[i]):
-            MAMA[i] = MAMA[i - 1]
-            FAMA[i] = FAMA[i - 1]
-            Smooth[i] = Smooth[i - 1]
-            Detrender[i] = Detrender[i - 1]
-            I1[i] = I1[i - 1]
-            Q1[i] = Q1[i - 1]
-            I2[i] = I2[i - 1]
-            Q2[i] = Q2[i - 1]
-            Re[i] = Re[i - 1]
-            Im[i] = Im[i - 1]
-            Period[i] = Period[i - 1]
-            SmoothPeriod[i] = SmoothPeriod[i - 1]
-            Phase[i] = Phase[i - 1]
-            continue
-
-        if i > 5:
-            Smooth[i] = (4 * Price[i] + 3 * Price[i - 1] + 2 * Price[i - 2] + Price[i - 3]) / 10
-            Detrender[i] = (0.0962 * Smooth[i] + 0.5769 * Smooth[i - 2] - 0.5769 * Smooth[i - 4] - 0.0962 * Smooth[
-                i - 6]) * (0.075 * Period[i - 1] + 0.54)
-            Q1[i] = (0.0962 * Detrender[i] + 0.5769 * Detrender[i - 2] - 0.5769 * Detrender[i - 4] - 0.0962 * Detrender[
-                i - 6]) * (0.075 * Period[i - 1] + 0.54)
-            I1[i] = Detrender[i - 3]
-            jI[i] = (0.0962 * I1[i] + 0.5769 * I1[i - 2] - 0.5769 * I1[i - 4] - 0.0962 * I1[i - 6]) * (
-                        0.075 * Period[i - 1] + 0.54)
-            jQ[i] = (0.0962 * Q1[i] + 0.5769 * Q1[i - 2] - 0.5769 * Q1[i - 4] - 0.0962 * Q1[i - 6]) * (
-                        0.075 * Period[i - 1] + 0.54)
-            I2[i] = I1[i] - jQ[i]
-            Q2[i] = Q1[i] + jI[i]
-            I2[i] = 0.2 * I2[i] + 0.8 * I2[i - 1]
-            Q2[i] = 0.2 * Q2[i] + 0.8 * Q2[i - 1]
-            Re[i] = I2[i] * I2[i - 1] + Q2[i] * Q2[i - 1]
-            Im[i] = I2[i] * Q2[i - 1] - Q2[i] * I2[i - 1]
-            Re[i] = 0.2 * Re[i] + 0.8 * Re[i - 1]
-            Im[i] = 0.2 * Im[i] + 0.8 * Im[i - 1]
-
-            if Im[i] != 0 and Re[i] != 0:
-                Period[i] = 2 * PI / math.atan(Im[i] / Re[i])
-                Period[i] = min(1.5 * Period[i - 1], max(0.67 * Period[i - 1], Period[i]))
-                Period[i] = min(50, max(6, Period[i]))
-                Period[i] = 0.2 * Period[i] + 0.8 * Period[i - 1]
-                SmoothPeriod[i] = 0.33 * Period[i] + 0.67 * SmoothPeriod[i - 1]
-
-                if I1[i] != 0:
-                    Phase[i] = 180 / PI * math.atan(Q1[i] / I1[i])
-                    DeltaPhase[i] = Phase[i - 1] - Phase[i]
-                    DeltaPhase[i] = max(1, DeltaPhase[i])
-                    alpha[i] = FastLimit / DeltaPhase[i]
-                    alpha[i] = max(SlowLimit, min(FastLimit, alpha[i]))
-                    MAMA[i] = alpha[i] * Price[i] + (1 - alpha[i]) * MAMA[i - 1]
-                    FAMA[i] = 0.5 * alpha[i] * MAMA[i] + (1 - 0.5 * alpha[i]) * FAMA[i - 1]
-
-    return MAMA, FAMA
-
-
-# Function to plot stock data, MAMA, and FAMA
-def plot_stock_with_mama_fama(data, mama, fama, ticker):
-    plt.figure(figsize=(10, 6))
-
-    # Plotting stock prices
-    plt.plot(data.index, data['Close'], label=f'{ticker} Stock Price', color='black')
-
-    # Plotting MAMA and FAMA
-    plt.plot(data.index, mama, label='MAMA', color='red')
-    plt.plot(data.index, fama, label='FAMA', color='blue')
-
-    # Adding legends and title
-    plt.legend()
-    plt.title(f'{ticker} Stock Price with MAMA and FAMA')
-    plt.xlabel('Date')
-    plt.ylabel('Price')
-
-    # Show plot
-    plt.show()
-
-
-if __name__ == "__main__":
-    # Specify the stock symbol, start date, and end date
-    ticker_symbol = "AAPL"
-    start_date = "2023-06-01"
-    end_date = "2024-02-15"
-
-    # Fetch stock data
-    stock_data = get_stock_data(ticker_symbol, start_date, end_date)
-
-    # Calculate MAMA and FAMA
-    mama, fama = calculate_mama_fama(stock_data)
-
-    # Plot stock data with MAMA and FAMA
-    plot_stock_with_mama_fama(stock_data, mama, fama, ticker_symbol)
-
-'''
-'''
-# Function to plot stock data, MAMA, and FAMA
-def plot_stock_with_mama_fama(data, mama, fama, ticker):
-    plt.figure(figsize=(10, 6))
-
-    # Plotting stock prices
-    plt.plot(data.index, data['Close'], label=f'{ticker} Stock Price', color='black')
-
-    # Plotting MAMA and FAMA
-    plt.plot(data.index, mama, label='MAMA', color='red')
-    plt.plot(data.index, fama, label='FAMA', color='blue')
-
-    # Adding legends and title
-    plt.legend()
-    plt.title(f'{ticker} Stock Price with MAMA and FAMA')
-    plt.xlabel('Date')
-    plt.ylabel('Price')
-
-    # Show plot
-    plt.show()
-'''
-
-
+'''import yfinance as yf
 import yfinance as yf
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-import mplfinance as mpf
-import numpy as np
 import pandas as pd
-import math
+import mplfinance as mpf
 import talib
+import numpy as np
+from matplotlib.backends.backend_pdf import PdfPages
+from datetime import datetime
 
-def fetch_stock_data(ticker, start_date):
-    stock_data = yf.download(ticker, start=start_date)
-    return stock_data
+def fetch_ticker_data(ticker, start_time):
+    ticker_data = yf.download(ticker, start= start_time)
+    return ticker_data
 
-def plot_stock_price(stock_data, ticker, pdf_pages):
-    # Calculate moving average of volume
-    stock_data['Volume_MA'] = stock_data['Volume'].rolling(window=20).mean()
+def cleaning_dataframe(df):
+    clean the dataframe
+    df.sort_index(ascending=True, inplace=True) #lo dejo sorteado con la última fecha abajo.
+    df.index.name = "Date" #index column llamada "Date"
+    df.ffill(inplace=True) #relleno los vacios con el valor del de arriba
+    df.dropna(how="all", inplace=True) #si hay filas completamente vacias, funalas
+    df.index = df.index.strftime("%Y-%m-%d")
+    df.index = pd.to_datetime(df.index)
 
-    # Plot candlestick chart with volume subplot
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={'height_ratios': [3, 1]})
+    return df
 
-    mpf.plot(stock_data, type='candle', ax=ax1, volume=ax2, show_nontrading=True)
-    ax1.set_yscale('log')  # Logarithmic scale for the price axis
-
-    # Add line for moving average of volume
-    ax2.plot(stock_data.index, stock_data['Volume_MA'], label='Volume MA (20 rounds)', color='orange', linestyle='--')
-    ax2.legend()
-
-    plt.title(f'{ticker} Candlestick Chart with Volume and Volume MA')
-    pdf_pages.savefig()
-    plt.close()
-
-# Function to calculate MAMA and FAMA using talib
 def calculate_mama_fama(data, fast=0.25, slow=0.05):
     mama, fama = talib.MAMA(data['Close'], fastlimit=fast, slowlimit=slow)
     return pd.Series(mama, index=data.index), pd.Series(fama, index=data.index)
 
-# Function to plot candlestick chart with MAMA and FAMA
-def plot_candlestick_with_mama_fama(data, mama, fama, ticker, pdf_pages):
-    # Create a DataFrame with MAMA and FAMA values
-    df_mama_fama = pd.DataFrame({'MAMA': mama, 'FAMA': fama}, index=data.index)
+def rsi_tradingview(df: pd.DataFrame, stock, period_days):
+    """
+    :param df:
+    :param stock:
+    :param period_days:
+    :return: RSI
+    """
+    delta = df['Close'].diff()
 
-    # Plot candlestick chart with MAMA and FAMA
-    mpf.plot(data, type='candle', mav=(20,), volume=True, addplot=df_mama_fama, figscale=1.2, title=f'{ticker} Candlestick with MAMA and FAMA',
-             ylabel='Price', ylabel_lower='Volume', style='yahoo', show_nontrading=True, savefig=pdf_pages)
+    up = delta.copy()
+    up[up < 0] = 0
+    up = pd.Series.ewm(up, alpha=1/period_days).mean()
 
-def plot_probability_bands(stock_data, ticker, pdf_pages):
-    # Add your code to plot probability bands using mplfinance
-    # Example:
-    fig, ax = plt.subplots(figsize=(12, 6))
-    # Plot probability bands
-    plt.title(f'{ticker} Probability Bands')
-    pdf_pages.savefig()
-    plt.close()
+    down = delta.copy()
+    down[down > 0] = 0
+    down *= -1
+    down = pd.Series.ewm(down, alpha=1/period_days).mean()
 
-def plot_rsi(stock_data, ticker, pdf_pages):
-    # Calculate RSI using Talib library
-    stock_data['RSI'] = talib.RSI(stock_data['Close'], timeperiod=14)
+    rsi_values = np.where(up == 0, 0, np.where(down == 0, 100, 100 - (100 / (1 + up / down))))
 
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(stock_data['RSI'], label='RSI (14 weeks)')
-    plt.title(f'{ticker} RSI Over Time (14 weeks)')
-    plt.xlabel('Date')
-    plt.ylabel('RSI Value')
-    ax.legend()
-    pdf_pages.savefig()
-    plt.close()
+    rsi_df = pd.DataFrame({'RSI': rsi_values}, index=df.index)
+    return rsi_df #return date as index, and rsi value as another column.
 
-def plot_max_min_lines(stock_data, ticker, pdf_pages):
-    # Add your code to draw lines at maximum and minimum values using mplfinance
-    # Example:
-    fig, ax = plt.subplots(figsize=(12, 6))
-    # Plot lines at max and min values
-    plt.title(f'{ticker} Max and Min Lines')
-    pdf_pages.savefig()
-    plt.close()
+###########
+def calculate_volatility(df, lookback):
+    returns = np.log(df['Close'] / df['Close'].shift(1))
+    volatility = returns.rolling(window=lookback).std() * np.sqrt(252)
+    #print("Volatility:", volatility)
+    return volatility
 
-def plot_volatility(stock_data, ticker, pdf_pages):
-    # Calculate volatility using Talib library
-    stock_data['Volatility'] = talib.ATR(stock_data['High'], stock_data['Low'], stock_data['Close'])
 
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(stock_data['Volatility'], label='Volatility')
-    plt.title(f'{ticker} Volatility Over Time')
-    plt.xlabel('Date')
-    plt.ylabel('Volatility Value')
-    ax.legend()
-    pdf_pages.savefig()
+def calculate_skewness(df, skew_length):
+    true_range = df.apply(lambda row: max(row['High'] - row['Low'], abs(row['High'] - row['Close']), abs(row['Low'] - row['Close'])), axis=1)
+    deviation_max = pd.Series(1., index=df.index)
+    deviation_min = pd.Series(1., index=df.index)
+
+    alpha = 2.0 / (1.0 + skew_length)
+
+    for i in range(1, len(df)):
+        deviation_max[i] = alpha * (true_range[i] if df['Close'][i] > df['Close'][i-1] else 0) + (1.0 - alpha) * deviation_max[i-1]
+        deviation_min[i] = alpha * (true_range[i] if df['Close'][i] < df['Close'][i-1] else 0) + (1.0 - alpha) * deviation_min[i-1]
+
+    skewness = deviation_max / deviation_min
+    #print("Skewness:", skewness)
+    return skewness
+
+def calculate_kurtosis(series, lookback):
+    avg = series.ewm(span=lookback).mean()
+    stdv = series.rolling(window=lookback).std()
+    kurtosis = ((series - avg).pow(4).ewm(span=lookback).mean()) / (lookback * stdv.pow(4)) - 3
+    #print("Kurtosis:", kurtosis)
+    return kurtosis
+
+def cornish_fisher_quantile(q, skew, kurtosis):
+    second_term = (q**2 - 1) / 6 * skew
+    third_term = (q**3 - 3 * q) / 24 * kurtosis
+    fourth_term = (2 * q**3 - 5 * q) / 36 * skew**2
+    return q + second_term + third_term + fourth_term
+
+def calculate_risk_ranges(df, lookback, skew_length, choiceMidPoint):
+    #calculate 3 parameters to calculate the risk ranges
+    volatility = calculate_volatility(df, lookback)
+    skewness = calculate_skewness(df, skew_length)
+    kurtosis_val = calculate_kurtosis(df['Close'], lookback)
+
+    upskew = cornish_fisher_quantile(1.645, skewness, kurtosis_val)
+    downskew = cornish_fisher_quantile(-1.645, skewness, kurtosis_val)
+
+    if choiceMidPoint == 'Last':
+        midpoint = df['Close']
+    elif choiceMidPoint == 'YDAY':
+        midpoint = df['Close'].shift(1)
+    elif choiceMidPoint == 'H&L':
+        midpoint = (df['High'] + df['Low']) / 2
+    elif choiceMidPoint == 'Tight':
+        midpoint = np.minimum(df['Low'], df['Close'].shift(1))
+
+    rr_high = midpoint + upskew * volatility
+    rr_low = midpoint + downskew * volatility
+
+    #print("Risk Range High:", rr_high)
+    #print("Risk Range Low:", rr_low)
+
+    return rr_high, rr_low
+##############
+
+def plot_price_MA_volume(ticker_data, ticker, pdf_pages, start_date):
+
+    #collect moving averages
+    ticker_data['MA10'] = ticker_data['Close'].rolling(window=10).mean()
+    ticker_data['MA20'] = ticker_data['Close'].rolling(window=20).mean()
+    ticker_data['MA50'] = ticker_data['Close'].rolling(window=50).mean()
+
+    #dictionaries -> important that this data has the same range of date as the plot.
+    ma10 = mpf.make_addplot(ticker_data['MA10'][start_date:], color="darkorange", width=1.5, label='MA10') #width determina grosor de la linea
+    ma20 = mpf.make_addplot(ticker_data['MA20'][start_date:], color="firebrick", width=1.5, label='MA20') #type, linestyle, alpha could be added
+    ma50 = mpf.make_addplot(ticker_data['MA50'][start_date:], color="tomato", width=1.5, label='MA50')
+
+    #dictionary with volumes
+    ticker_data['Volume20R'] = ticker_data['Volume'].rolling(window=20).mean()
+    volume = mpf.make_addplot(ticker_data['Volume20R'][start_date:], color="lightgray", panel=1, label='Vol MA20')
+
+    #dictionary with RSI and added to plot
+    ticker_data['RSI14'] = rsi_tradingview(ticker_data, ticker, 14)['RSI']
+    rsi = mpf.make_addplot(ticker_data['RSI14'][start_date:], color="steelblue", panel=3, label='RSI14')
+
+    #MAMA and FAMA
+    ticker_data["MAMA"], ticker_data["FAMA"] = calculate_mama_fama(ticker_data)
+    mama = mpf.make_addplot(ticker_data["MAMA"][start_date:], color="cadetblue", panel=2, label='MAMA', secondary_y=False) #secondary y false so they share the same y-axis numbers.
+    fama = mpf.make_addplot(ticker_data["FAMA"][start_date:], color="lightsteelblue", panel=2, label='FAMA', secondary_y=False)
+    price = mpf.make_addplot(ticker_data["Close"][start_date:], color="black", panel=2, label='price', secondary_y=False)
+
+    #ratios vs MA
+    ticker_data['ratio/MA10'] = ticker_data["Close"] / ticker_data["MA10"]
+    ticker_data['ratio/MA20'] = ticker_data["Close"] / ticker_data["MA20"]
+    ticker_data['ratio/MA50'] = ticker_data["Close"] / ticker_data["MA50"]
+    ratioMA10 =  mpf.make_addplot(ticker_data["ratio/MA10"][start_date:], color="forestgreen", panel=4, label='$/MA10', secondary_y=False)
+    ratioMA20 =  mpf.make_addplot(ticker_data["ratio/MA20"][start_date:], color="olivedrab", panel=4, label='$/MA20', secondary_y=False)
+    ratioMA50 =  mpf.make_addplot(ticker_data["ratio/MA50"][start_date:], color="darkolivegreen", panel=4, label='$/MA50', secondary_y=False)
+
+    #probability bands
+    ticker_data["high_range"], ticker_data["low_range"] = calculate_risk_ranges(ticker_data, lookback=21, skew_length=21, choiceMidPoint='Tight')
+    high_range = mpf.make_addplot(ticker_data["high_range"][start_date:], color="forestgreen", panel=5, label='high', secondary_y=False)
+    low_range = mpf.make_addplot(ticker_data["low_range"][start_date:], color="red", panel=5, label='low', secondary_y=False)
+    price2 = mpf.make_addplot(ticker_data["Close"][start_date:], color="black", panel=5, label='price', secondary_y=False)
+
+    #four weeks ago date
+    today= ticker_data.index[-1]
+    date4w = "2024-01-25"
+    date4w = pd.to_datetime(date4w)
+    max_price_4w = ticker_data['Close'].loc[date4w:today].max()
+    min_price_4w = ticker_data['Close'].loc[date4w:today].min()
+
+    #13 weeks
+    date13w = "2023-11-20"
+    date13w = pd.to_datetime(date13w)
+    max_price_13w = ticker_data['Close'].loc[date13w:today].max()
+    min_price_13w = ticker_data['Close'].loc[date13w:today].min()
+
+    # 26 weeks
+    date26w = "2023-07-20"
+    date26w = pd.to_datetime(date26w)
+    max_price_26w = ticker_data['Close'].loc[date26w:today].max()
+    min_price_26w = ticker_data['Close'].loc[date26w:today].min()
+    [(date26w, max_price_26w), (date26w, min_price_26w), (today, min_price_26w), (today, max_price_26w),
+     (date26w, max_price_26w)]
+    sequence = [[(date26w, max_price_26w), (date26w, min_price_26w), (today, min_price_26w), (today, max_price_26w), (date26w, max_price_26w)],
+                     [(date13w, max_price_13w), (date13w, min_price_13w), (today, min_price_13w), (today, max_price_13w), (date13w, max_price_13w)],
+                     [(date4w, max_price_4w), (date4w, min_price_4w), (today, min_price_4w), (today, max_price_4w), (date4w, max_price_4w)]]
+
+    #plot data,     #tight_layout mete el titulo dentro del grafico. figratio pone eje y a la derecha.
+    fig, ax = mpf.plot(
+             ticker_data[start_date:],
+             type='candle',
+             addplot = [ma10, ma20, ma50, price, fama, mama, volume, rsi,ratioMA10, ratioMA20, ratioMA50, high_range, low_range, price2],
+             title=f'{ticker}',
+             volume=True, #volume barchart
+             style='yahoo',
+             datetime_format = '%b.%d',
+             returnfig=True,
+             xrotation=0,
+             panel_ratios = (6, 2, 2, 2, 2, 4),
+             figscale = 2,
+             alines= dict(alines=sequence, colors=['lightblue', 'steelblue', 'blue']),
+    )
+
+    pdf_pages.savefig() #save the figure plotted to the pdf
     plt.close()
 
 def main():
-    tickers = ['AAPL']  # Add your desired tickers
-    start_date = '2023-06-01'  # Specify the start date
+    tickers = ['AAPL', 'MSFT']
+    start_time = "2021-06-01"
+    start_date = "2023-06-01"
 
-    with PdfPages('stock_analysis.pdf') as pdf_pages:
+    with PdfPages('stockAnalysis.pdf') as pdf_pages:
         for ticker in tickers:
-            stock_data = fetch_stock_data(ticker, start_date)
-            plot_stock_price(stock_data, ticker, pdf_pages)
+            ticker_data = fetch_ticker_data(ticker, start_time)
+            ticker_data = cleaning_dataframe(ticker_data)
 
-            mama, fama = calculate_mama_fama(stock_data)
-            plot_candlestick_with_mama_fama(stock_data, mama, fama, ticker, pdf_pages)
+            plot_price_MA_volume(ticker_data, ticker, pdf_pages, start_date=start_date)
 
-            plot_probability_bands(stock_data, ticker, pdf_pages)
-            plot_rsi(stock_data, ticker, pdf_pages)
-            plot_max_min_lines(stock_data, ticker, pdf_pages)
-            plot_volatility(stock_data, ticker, pdf_pages)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
+'''
+
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
+import math
+import numpy as np
+import yfinance as yf
+import pandas_ta as ta
+from scipy.stats import kurtosis
+
+
+#date='2023-06-01'
+
+def fetch_ticker_data(ticker, start_time):
+    ticker_data = yf.download(ticker, start= start_time)
+    return ticker_data
+
+def cleaning_dataframe(df):
+    '''clean the dataframe'''
+    df.sort_index(ascending=True, inplace=True) #lo dejo sorteado con la última fecha abajo.
+    df.index.name = "Date" #index column llamada "Date"
+    df.ffill(inplace=True) #relleno los vacios con el valor del de arriba
+    df.dropna(how="all", inplace=True) #si hay filas completamente vacias, funalas
+    df.index = df.index.strftime("%Y-%m-%d")
+    df.index = pd.to_datetime(df.index)
+    return df
+
+
+# Define the input parameters
+tickers = ['AAPL', 'MSFT']
+start_time = "2021-06-01"
+start_date = "2023-06-01"
+
+# Function to calculate kurtosis
+def kurtosis(src, length):
+    avg = src.ewm(span=length, adjust=False).mean()
+    stdv = src.rolling(window=length).std()
+    sum_values = ((src - avg) ** 4).rolling(window=length).sum()
+    for i in range(1, length):
+        sum_values += ((src.shift(-i) - avg) ** 4).rolling(window=length).sum()
+    return sum_values / length / (stdv ** 4) - 3
+
+# Function to calculate x_star
+def x_star(q, k3, k4):
+    second_term = (q ** 2 - 1) / 6 * k3
+    third_term = (q ** 3 - 3 * q) / 24 * k4
+    fourth_term = (2 * q ** 3 - 5 * q) / 36 * k3 ** 2
+    return q + second_term + third_term + fourth_term
+
+# Iterate through tickers
+for ticker in tickers:
+    # Fetch and clean data for the current ticker
+    ticker_data = fetch_ticker_data(ticker, start_time)
+    ticker_data = cleaning_dataframe(ticker_data)
+
+    # Set the variables and parameters
+    LookBack = 21
+    alpha = 2.0 / (1.0 + LookBack)
+    SkewLength = 21
+    true_range = np.maximum.reduce([ticker_data['High'] - ticker_data['Low'],
+                                    np.abs(ticker_data['High'] - ticker_data['Close'].shift(1)),
+                                    np.abs(ticker_data['Low'] - ticker_data['Close'].shift(1))]) / ticker_data['Close'].shift(1)
+
+    deviation_max = 1.0
+    deviation_min = 1.0
+
+    # Calculate deviation_max and deviation_min
+    for i in range(1, len(ticker_data)):
+        deviation_max = alpha * (ticker_data['Close'][i] > ticker_data['Close'][i - 1]) * true_range[i] + (1.0 - alpha) * deviation_max
+        deviation_min = alpha * (ticker_data['Close'][i] < ticker_data['Close'][i - 1]) * true_range[i] + (1.0 - alpha) * deviation_min
+
+    # Calculate skewness
+    skewness = deviation_max / deviation_min
+    #print(skewness)
+
+    # Calculate kurtosis
+    x_kurtosis = ticker_data['Close'].kurtosis()
+    #print(x_kurtosis)
+
+    # Cornish-Fisher approximation of 90th quantile
+    upskew = x_star(1.645, skewness, x_kurtosis)
+    downskew = x_star(-1.645, skewness, x_kurtosis)
+
+    # Calculate PxH and PxL based on choiceMidPoint
+    choiceMidPoint = 'Tight'
+    if choiceMidPoint == 'Last':
+        PxH = ticker_data['Close']
+        PxL = ticker_data['Close']
+    elif choiceMidPoint == 'YDAY':
+        PxH = ticker_data['Close'].shift(1)
+        PxL = ticker_data['Close'].shift(1)
+    elif choiceMidPoint == 'H&L':
+        PxH = ticker_data['Low']
+        PxL = ticker_data['High']
+    elif choiceMidPoint == 'Tight':
+        PxH = np.minimum(ticker_data['Low'], ticker_data['Close'].shift(1))
+        PxL = np.maximum(ticker_data['High'], ticker_data['Close'].shift(1))
+
+    #print(downskew)
+    # Calculate RRHigh and RRLow
+    RRHigh = PxH + upskew * ticker_data['Close'].rolling(window=LookBack).std()
+    RRLow = PxL + downskew * ticker_data['Close'].rolling(window=LookBack).std()
+
+    # Print or use RRHigh and RRLow as needed
+    #print(RRHigh, RRLow)
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    plt.plot(ticker_data.index, ticker_data['Close'], label='Close Price', linewidth=2)
+    plt.plot(ticker_data.index, RRHigh, label='High Risk Range', color='orange', linewidth=2)
+    plt.plot(ticker_data.index, RRLow, label='Low Risk Range', color='green', linewidth=2)
+    plt.title(f'{ticker} - Risk Ranges')
+    plt.xlabel('Date')
+    plt.ylabel('Price')
+    plt.legend()
+    plt.show()
