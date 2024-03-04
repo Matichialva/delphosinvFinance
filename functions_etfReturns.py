@@ -10,7 +10,7 @@ def add_data_dataframe(stocks, df, periodo):
     '''given a list of stocks and a dataframe, downloads the "Close" price
      of each stock everyday and concatenates it to the dataframe.'''
     for stock in stocks:
-        stockDataframe = yf.download(stock, period=periodo)["Close"]  # columna de cotización de la stock
+        stockDataframe = yf.download(stock, period=periodo)["Adj Close"]  # columna de cotización de la stock
         stockDataframe.name = stock  # column name is the stock name
         df = pd.concat([df, stockDataframe], axis=1)  # mergeo data de cada stock al df
     return df

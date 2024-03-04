@@ -14,7 +14,7 @@ def main():
     # list of tickers
     sp500tickers = balanceDF.index.tolist()
 
-    create pricesDF, fetch stock prices and add it to pricesDF. Save it in excel file.
+    #create pricesDF, fetch stock prices and add it to pricesDF. Save it in excel file.
     pricesDF = fetch_stock_prices(sp500tickers)
     prices_file_path = os.path.join("technicalFactorsExcel", "sp500Prices.xlsx")
     pricesDF.to_excel(prices_file_path, index=True)  # lo paso a un excelprint(pricesDF)
