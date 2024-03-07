@@ -150,6 +150,27 @@ def create_prices_graph(ticker_data, price_column, strategy_price_column, fechas
 
     plt.savefig('prices_graph.png')
 
+def create_drawdown_graph(df, price_column):
+    ticker_data = df.copy()
+    ticker_data['previous peak'] = ticker_data[price_column].cummax()
+    ticker_data['drawdown'] = (ticker_data[price_column] - ticker_data['previous peak']) / ticker_data['previous peak']
+
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(ticker_data.index, ticker_data[price_column], label='stock price', color='dodgerblue')
+    plt.plot(ticker_data.index, ticker_data['previous peak'], label='previous peak', linestyle='--', color='blue')
+
+    plt.fill_between(ticker_data.index, ticker_data[price_column], ticker_data['previous peak'], where= ticker_data['drawdown'] < 0 ,color='salmon', alpha=0.3,label='drawdown')
+
+    plt.xlabel('Date')
+    plt.ylabel('price')
+    plt.title('stock price & drawdown')
+    plt.legend()
+
+    plt.savefig('drawdown_graph.png')
+
+
+
 
 def create_stats_df(df):
     index = ['periodo entero', 'comprado', 'en efectivo', 'vendido']
@@ -167,31 +188,42 @@ def media_geometrica(returns_column):
 
     return tot_value
 
-def calculate_stats(backtest_data, stats, tickerPrice, tickerReturn, stratPrice, stratReturn):
+def calculate_stats(backtest_data, stats, tickerPrice, tickerReturn, stratPrice, stratReturn, positionColumn):
 
-    for strategy in ['Activo', 'Estrategia']:
+    for periodo in ['periodo entero', 'comprado', 'en efectivo', 'vendido']:
+        if periodo == 'periodo entero':
+            period_dataframe = backtest_data.copy()
+        elif periodo == 'comprado':
+            period_dataframe = backtest_data[backtest_data[positionColumn] == 1]
+        elif periodo == 'en efectivo':
+            period_dataframe = backtest_data[backtest_data[positionColumn] == 0]
+        elif periodo == 'vendido':
+            period_dataframe = backtest_data[backtest_data[positionColumn] == -1]
 
-        if strategy == 'Activo':
-            price_column = backtest_data[tickerPrice]
-            returns_column = backtest_data[tickerReturn]
-        elif strategy == 'Estrategia':
-            price_column = backtest_data[stratPrice]
-            returns_column = backtest_data[stratReturn]
+        for strategy in ['Activo', 'Estrategia']:
+
+            if strategy == 'Activo':
+                price_column = period_dataframe[tickerPrice]
+                returns_column = period_dataframe[tickerReturn]
+            elif strategy == 'Estrategia':
+                price_column = period_dataframe[stratPrice]
+                returns_column = period_dataframe[stratReturn]
 
 
-        mediana = statistics.median(returns_column)
-        arit_mean = statistics.mean(returns_column)
-        geo_mean = media_geometrica(returns_column)
-        stddev = statistics.stdev(returns_column)
-        max_value = max(returns_column)
-        min_value = min(returns_column)
+            mediana = statistics.median(returns_column)
+            arit_mean = statistics.mean(returns_column)
+            geo_mean = media_geometrica(returns_column)
+            stddev = statistics.stdev(returns_column)
+            max_value = max(returns_column)
+            min_value = min(returns_column)
 
-        stats.loc['periodo entero', (strategy, 'Mediana')] = round(mediana *100, 2)
-        stats.loc['periodo entero', (strategy, 'Media arit.')] = round(arit_mean *100, 2)
-        stats.loc['periodo entero', (strategy, 'Media geo.')] = round(geo_mean *100, 2)
-        stats.loc['periodo entero', (strategy, 'Desvio')] = round(stddev *100, 2)
-        stats.loc['periodo entero', (strategy, 'Max')] = round(max_value *100, 2)
-        stats.loc['periodo entero', (strategy, 'Min')] = round(min_value *100, 2)
+
+            stats.loc[periodo, (strategy, 'Mediana')] = round(mediana *100, 2)
+            stats.loc[periodo, (strategy, 'Media arit.')] = round(arit_mean *100, 2)
+            stats.loc[periodo, (strategy, 'Media geo.')] = round(geo_mean *100, 2)
+            stats.loc[periodo, (strategy, 'Desvio')] = round(stddev *100, 2)
+            stats.loc[periodo, (strategy, 'Max')] = round(max_value *100, 2)
+            stats.loc[periodo, (strategy, 'Min')] = round(min_value *100, 2)
 
 
     return stats
@@ -213,8 +245,12 @@ def main():
     #create price plot of strategy and stock, and save it in png file.
     create_prices_graph(ticker_data, 'Adj Close', 'strategy_prices', ticker_data.index)
 
+    #create drawdown graph
+    create_drawdown_graph(ticker_data, 'Adj Close')
+
+    #create stats excel
     stats = create_stats_df(ticker_data)
-    stats = calculate_stats(ticker_data, stats, 'Adj Close', 'ticker_returns', 'strategy_prices', 'strategy_returns')
+    stats = calculate_stats(ticker_data, stats, 'Adj Close', 'ticker_returns', 'strategy_prices', 'strategy_returns', 'positionShift')
     stats.to_excel('stats.xlsx', index=True)
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import os
 import seaborn as sns
 
+
 #######################drive#####################################33
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -71,7 +72,7 @@ def download_from_google_drive(destination_path):
 
 
 def fetch_ticker_data(ticker, start_time):
-    ticker_data = yf.download(ticker, start= start_time)
+    ticker_data = yf.download(ticker, start= start_time, auto_adjust=True) #adjust by dividends/stocksplits
     return ticker_data
 
 def cleaning_dataframe(df):
@@ -89,23 +90,20 @@ def calculate_mama_fama_daily(data, fast=0.25, slow=0.05):
     mama, fama = talib.MAMA(data['Close'], fastlimit=fast, slowlimit=slow)
     return pd.Series(mama, index=data.index), pd.Series(fama, index=data.index)
 
-def calculate_mama_fama(data, fast=0.25, slow=0.05):
-    mama_daily, fama_daily = talib.MAMA(data['Close'], fastlimit=fast, slowlimit=slow)
-
-    # Weekly calculation
-    data_weekly = data.resample('W').last()
-    mama_weekly, fama_weekly = talib.MAMA(data_weekly['Close'], fastlimit=fast, slowlimit=slow)
+def calculate_mama_fama_week(data, fast=0.25, slow=0.05):
     # Convert the daily MAMA and FAMA series to a DataFrame with the original index
-    mama_daily_series = pd.Series(mama_daily, index=data.index)
-    fama_daily_series = pd.Series(fama_daily, index=data.index)
+    # Weekly calculation
 
-    # Convert the weekly MAMA and FAMA series to a DataFrame with the original index
-    mama_weekly_series = pd.Series(mama_weekly, index=data_weekly.index)
-    fama_weekly_series = pd.Series(fama_weekly, index=data_weekly.index)
+    data['MAMAweeks'] = np.nan
+    data['FAMAweeks'] = np.nan
 
-    #data['MAMA_Weekly'] = mama_weekly_series.reindex(data.index)
-    #data['FAMA_Weekly'] = fama_weekly_series.reindex(data.index)
-    return mama_daily_series, fama_daily_series, mama_weekly_series, fama_weekly_series
+
+    for date in data.index:
+        data_weekly = data[:date].resample('W-Fri').last()
+        mama, fama = talib.MAMA(data_weekly['Close'], fastlimit=fast, slowlimit=slow)
+        # Convert the weekly MAMA and FAMA series to a DataFrame with the original index
+        data.loc[date, 'MAMAweeks'] = mama[-1]
+        data.loc[date, 'FAMAweeks'] = fama[-1]
 
 
 def rsi_tradingview(df: pd.DataFrame, stock, period_days):
@@ -130,6 +128,40 @@ def rsi_tradingview(df: pd.DataFrame, stock, period_days):
 
     rsi_df = pd.DataFrame({'RSI': rsi_values}, index=df.index)
     return rsi_df #return date as index, and rsi value as another column.
+
+def rsi_tradingview_weekly(df: pd.DataFrame, stock, period_days):
+    """
+    igual al rsiDaily pero en vez de tener todos los precios de todos los dias en el df que le paso,
+    tengo las fechas de todos los viernes, y del current day.
+
+    :param df:
+    :param stock:
+    :param period_days:
+    :return: RSI
+    """
+
+    df['RSI14weeks'] = np.nan
+
+    for date in df.index:
+        #resample weekly and take the last value, so it only appears the price of the last day of each particular week.
+        weekly_returns = df['Close'][:date].resample('W-Fri', closed='right').last()
+        delta = weekly_returns.diff()
+
+        up = delta.copy()
+        up[up < 0] = 0
+        up = pd.Series.ewm(up, alpha=1/period_days).mean()
+
+        down = delta.copy()
+        down[down > 0] = 0
+        down *= -1
+        down = pd.Series.ewm(down, alpha=1/period_days).mean()
+
+        rsi_values = np.where(up == 0, 0, np.where(down == 0, 100, 100 - (100 / (1 + up / down))))
+
+        #rsi_df = pd.DataFrame({'RSI14weeks': rsi_values}, index=df.index)
+
+        #en la última fecha, guardo el último rsi de la tabla de valores
+        df.loc[date, 'RSI14weeks'] = rsi_values[-1]
 
 ###########
 def calculate_volatility(df, lookback):
@@ -208,8 +240,12 @@ def calculate_risk_ranges(ticker_data, choiceMidPoint):
 ##############
 
 def plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, start_date):
-    gics1 = tickersCategories.loc[ticker, 'GICS 1']
-    gics2 = tickersCategories.loc[ticker, 'GICS 2']
+    try:
+        gics1 = tickersCategories.loc[ticker, 'GICS 1']
+        gics2 = tickersCategories.loc[ticker, 'GICS 2']
+    except:
+        gics1=''
+        gics2=''
 
     #four weeks ago date
     today= ticker_data.index[-1] #fecha de último dia de cotización
@@ -231,7 +267,7 @@ def plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, star
     min_price_26w = ticker_data['Close'].loc[date26w:today].min()
 
     #fixed date
-    datefixed = "2023-12-19"
+    datefixed = "2023-12-9"
     datefixed = pd.to_datetime(datefixed)
     max_price_fixed = ticker_data['Close'].loc[datefixed:today].max()
     min_price_fixed = ticker_data['Close'].loc[datefixed:today].min()
@@ -273,7 +309,6 @@ def plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, star
     #plot the ticker_data as candle in this axes, add plots that also correspond to this axes, xrotation null and plot the lines forming a rectangle.
     mpf.plot(ticker_data[start_date:], type='candle', ax=ax1, addplot=[m8, m20, m50, m200], xrotation=0, alines= dict(alines=sequence, colors=['lightblue', 'steelblue', 'blue', 'purple']))
 
-
     #SECOND PLOT
     ticker_data['Volume20R'] = ticker_data['Volume'].rolling(window=20).mean()
     volume = mpf.make_addplot(ticker_data['Volume20R'][start_date:], color="lightgray", label='Vol MA20', ax=ax2)
@@ -282,17 +317,23 @@ def plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, star
 
     #THIRD PLOT
     ticker_data['RSI14'] = rsi_tradingview(ticker_data, ticker, 14)['RSI']
+    rsi_tradingview_weekly(ticker_data, ticker, 14)
     rsi = mpf.make_addplot(ticker_data['RSI14'][start_date:], color="steelblue", label='RSI14', ax=ax3)
+    rsiWeeks = mpf.make_addplot(ticker_data['RSI14weeks'][start_date:], color="teal", label='RSI14weeks', ax=ax3)
+
     ax3.set_yticks([10, 30, 50, 70, 90])
-    mpf.plot(ticker_data[start_date:], type='candle', ax=ax4, xrotation=0, addplot=[rsi])
+    mpf.plot(ticker_data[start_date:], type='candle', ax=ax4, xrotation=0, addplot=[rsi, rsiWeeks])
 
 
     #FORTH PLOT
     ticker_data["MAMA"], ticker_data["FAMA"] = calculate_mama_fama_daily(ticker_data)
-    mama = mpf.make_addplot(ticker_data["MAMA"][start_date:], color="cadetblue", label='MAMA',
-                            secondary_y=False, ax=ax4)  # secondary y false so they share the same y-axis numbers.
-    fama = mpf.make_addplot(ticker_data["FAMA"][start_date:], color="lightsteelblue", label='FAMA',
-                            secondary_y=False, ax=ax4)
+    calculate_mama_fama_week(ticker_data)
+
+    #mamaW = mpf.make_addplot(ticker_data["MAMAweeks"][start_date:], color="hotpink", label='MAMAweekly', secondary_y=False, ax=ax4)  # secondary y false so they share the same y-axis numbers.
+    #famaW = mpf.make_addplot(ticker_data["FAMAweeks"][start_date:], color="mediumvioletred", label='FAMAweekly', secondary_y=False, ax=ax4)
+    mama = mpf.make_addplot(ticker_data["MAMA"][start_date:], color="cadetblue", label='MAMA', secondary_y=False, ax=ax4)  # secondary y false so they share the same y-axis numbers.
+    fama = mpf.make_addplot(ticker_data["FAMA"][start_date:], color="steelblue", label='FAMA', secondary_y=False, ax=ax4)
+
     #IMPORTANTE -> raro, dejo ax=ax4(otro grafico donde esta el candlechart del price, pero al agregar addplot a ese, y en el addplot esta ax=ax6, agrega lo del addplot al ax6 sin agregar el candlechart)
     mpf.plot(ticker_data[start_date:], type='candle', ax=ax4, xrotation=0, addplot=[mama, fama])
 
@@ -340,7 +381,16 @@ def plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, star
     plt.setp(ax4.get_xticklabels(), visible=False)
     plt.setp(ax5.get_xticklabels(), visible=False)
 
+    #set the legends of the plots to the upper left
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper left')
+    ax3.legend(loc='upper left')
+    ax4.legend(loc='upper left')
+    ax5.legend(loc='upper left')
+    ax6.legend(loc='upper left')
+
     plt.suptitle(f'{ticker} - {gics1} - {gics2}', fontsize=35, y=0.98)
+    plt.text(0.05, 0.94, f'última fecha tenida en cuenta: {ticker_data.index[-1].strftime("%Y-%m-%d")}', fontsize=16, transform=fig.transFigure)
     pdf_pages.savefig(fig, bbox_inches='tight') #save the figure plotted to the pdf
     plt.close()
 
@@ -349,7 +399,12 @@ def main():
     tickers_file_path = os.path.join("graphicalAnalysis", "tickersCategories.xlsx")
     download_from_google_drive(tickers_file_path) #descargo el excel del drive y lo guardo en tickers_file_path
     tickersCategories = pd.read_excel(tickers_file_path, engine="openpyxl") #chupo ticker-categoria del excel
+
+    #document to test locally
     tickers = tickersCategories['TICKER'].tolist() #lista de tickers
+    #tickers = ['GLD', 'UUP']
+    #tickers = list(set(tickers))
+
     tickersCategories.set_index('TICKER', inplace=True)
 
 
@@ -364,7 +419,8 @@ def main():
 
                 plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, start_date=start_date) #ploteo el gráfico
 
-    #graphic_analysis_file_path = os.path.join("eeuuFinance", "stockAnalysis.pdf")
+
+    #documento para testear localmente
     upload_pdf_to_google_drive('stockAnalysis.pdf', 'application/pdf')
 
 
