@@ -32,13 +32,15 @@ def main():
     factorsDF.to_excel(factors_file_path, index=True)
     factorsDF = pd.read_excel(factors_file_path, index_col="Ticker", engine="openpyxl")
 
+    last_date = pricesDF.index.strftime("%Y-%m-%d")[-1]
     topDownFactorsDF = calculate_top_down_factors(factorsDF, pricesDF, percentageDF)
-    topDownFactors_file_path = os.path.join("technicalFactorsExcel", "sp500topDownFactors.xlsx")
+    topDownFactors_file_path = os.path.join("technicalFactorsExcel", f"sp500topDownFactors-{last_date}.xlsx")
 
     topDownFactorsDF = (topDownFactorsDF.style
                         .apply(highlight_max_between_pairs, axis=0)
                         )
     topDownFactorsDF.to_excel(topDownFactors_file_path, index=True)
+
 
 
 if __name__ == "__main__":

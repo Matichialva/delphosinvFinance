@@ -65,8 +65,10 @@ def main():
                                               vmin=-50, vmax=50)
                          )
 
-    returns_file_path = os.path.join("etfReturnsExcel", "etfReturns.xlsx")
+    last_date = df.index.strftime("%Y-%m-%d")[-1]
+    returns_file_path = os.path.join("etfReturnsExcel", f"etfReturns-{last_date}.xlsx")
     stylePercentageDF.to_excel(returns_file_path, index=True) #lo paso a un excel
+
 
 if __name__ == "__main__":
     main()

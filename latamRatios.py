@@ -53,8 +53,8 @@ def main():
     result_df = style_by_ticker(result_df, 'TICKER')
     result_df = result_df.background_gradient(cmap='RdYlGn', subset=['desvio'], vmin=-4, vmax=4)
 
-    #result_df = style_by_ticker(result_df)
-    result_df.to_excel(os.path.join("latamReturns&Ratios", "latamCountriesRatios.xlsx"), engine='openpyxl', index=False)
+    last_date= pricesDF.index.strftime("%Y-%m-%d")[-1]
+    result_df.to_excel(os.path.join("latamReturns&Ratios", f"latamCountriesRatios-{last_date}.xlsx"), engine='openpyxl', index=False)
 #########################################################################################################################3
 
     #diccionario industria-ticker
@@ -90,7 +90,7 @@ def main():
     result_df2 = style_by_ticker(result_df2, 'TICKER')
     styled = result_df2.background_gradient(cmap='RdYlGn', subset=['desvio'], vmin=-4, vmax=4)
 
-    styled.to_excel(os.path.join("latamReturns&Ratios", "latamIndustryRatios.xlsx"), engine='openpyxl', index=False)
+    styled.to_excel(os.path.join("latamReturns&Ratios", f"latamIndustryRatios-{last_date}.xlsx"), engine='openpyxl', index=False)
 
 
 

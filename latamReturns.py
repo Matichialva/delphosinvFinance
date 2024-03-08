@@ -52,7 +52,8 @@ def main():
                          .background_gradient(subset=["6M", "1Y", "2Y", "3Y", "2022/12/9"], cmap='RdYlGn', axis=0,
                                               vmin=-50, vmax=50)
                          )
-    returns_file_path = os.path.join("latamReturns&Ratios", "latamReturns.xlsx")
+    last_date = pricesDF.index.strftime("%Y-%m-%d")[-1]
+    returns_file_path = os.path.join("latamReturns&Ratios", f"latamReturns-{last_date}.xlsx")
     stylePercentageDF.to_excel(returns_file_path, index=True, engine='openpyxl') #lo paso a un excel
 
 if __name__ == "__main__":

@@ -92,7 +92,9 @@ def main():
                          .background_gradient(subset=["MACD","signal"], cmap='RdYlGn', axis=0, vmin=-2, vmax=2)
                          )
 
-    indicators_file_path = os.path.join("technicalIndicatorsExcel", "etfIndicators.xlsx")
+    last_date = df.index.strftime("%Y-%m-%d")[-1]
+
+    indicators_file_path = os.path.join("technicalIndicatorsExcel", f"etfIndicators-{last_date}.xlsx")
     styledIndicatorsDF.to_excel(indicators_file_path, index=True)
 
 
