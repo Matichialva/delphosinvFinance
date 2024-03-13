@@ -28,7 +28,7 @@ def main():
     multi_index_df.sort_index(level=['GICS 1', 'GICS 2', 'Country', 'TICKER'],inplace=True) #sorteo en el orden q me interesa, en base a cual no quiero q se repita
     #multi_index_df = multi_index_df.reorder_levels(['GICS 1', 'GICS 2', 'Country', 'TICKER'])
     multi_index_df.drop(columns='BBG', inplace=True)
-    multi_index_df.to_excel("multiindex.xlsx", index=True)
+    #multi_index_df.to_excel("multiindex.xlsx", index=True)
 
     #percentageDF created
     percentageDF = pd.DataFrame(index = pricesDF.columns, columns=["1D", "1Ddesvios", "1W", "1Wdesvios", "1M", "1Mdesvios", "3M", "MTD", "QTD", "YTD", "6M", "1Y", "2Y", "3Y", "2022/12/9"]) #quiero las stocks a la izquierda

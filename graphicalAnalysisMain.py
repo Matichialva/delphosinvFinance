@@ -163,6 +163,18 @@ def rsi_tradingview_weekly(df: pd.DataFrame, stock, period_days):
         #en la última fecha, guardo el último rsi de la tabla de valores
         df.loc[date, 'RSI14weeks'] = rsi_values[-1]
 
+def calculate_200_median_weekly(df, price_column):
+    df['MA200w'] = np.nan
+
+    for date in df.index:
+        # resample weekly and take the last 200 weeks values, so it only appears the price of the last day of each particular week.
+        weekly_returns = df[price_column][:date].resample('W-Fri', closed='right').last().iloc[-200:]
+
+        median = weekly_returns.median()
+
+        # en la última fecha, guardo el último rsi de la tabla de valores
+        df.loc[date, 'MA200w'] = median
+
 ###########
 def calculate_volatility(df, lookback):
     returns = np.log(df['Close'] / df['Close'].shift(1))
@@ -300,14 +312,19 @@ def plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, star
     ticker_data['MA50'] = ticker_data['Close'].rolling(window=50).mean()
     ticker_data['MA200'] = ticker_data['Close'].rolling(window=200).mean()
 
+    calculate_200_median_weekly(ticker_data, 'Close')
+
     #armo plot de cada media movil, con respectivo color, label and respective axes.
     m8 = mpf.make_addplot(ticker_data['MA8'][start_date:], color="darkorange", width=1.5, label='MA8', ax=ax1) #width determina grosor de la linea
     m20 = mpf.make_addplot(ticker_data['MA20'][start_date:], color="firebrick", width=1.5, label='MA20', ax=ax1)  # type, linestyle, alpha could be added
     m50 = mpf.make_addplot(ticker_data['MA50'][start_date:], color="tomato", width=1.5, label='MA50', ax=ax1)
     m200 = mpf.make_addplot(ticker_data['MA200'][start_date:], color="red", width=1.5, label='MA200', ax=ax1)
+    m200w = mpf.make_addplot(ticker_data['MA200w'][start_date:], color="cyan", width=1.5, label='MA200w', ax=ax1)
 
     #plot the ticker_data as candle in this axes, add plots that also correspond to this axes, xrotation null and plot the lines forming a rectangle.
-    mpf.plot(ticker_data[start_date:], type='candle', ax=ax1, addplot=[m8, m20, m50, m200], xrotation=0, alines= dict(alines=sequence, colors=['lightblue', 'steelblue', 'blue', 'purple']))
+    mpf.plot(ticker_data[start_date:], type='candle', ax=ax1, addplot=[m8, m20, m50, m200, m200w], xrotation=0, alines= dict(alines=sequence, colors=['lightblue', 'steelblue', 'blue', 'purple']))
+
+
 
     #SECOND PLOT
     ticker_data['Volume20R'] = ticker_data['Volume'].rolling(window=20).mean()
