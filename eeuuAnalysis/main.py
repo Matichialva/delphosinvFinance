@@ -18,11 +18,11 @@ def cleaning_dataframe(df):
 
     return df
 
-def calculate_rsi(df, amount, period, price_column):
+def calculate_rsi(df, amount, period, price_column, stock):
     df[f'RSI{period}{amount}'] = np.nan
 
     for date in df.index:
-        current_day = df[stock].index[-1].day_name()[:3]  # nombre de dia de semana, primeras 3 letras
+        current_day = df.index[-1].day_name()[:3]  # nombre de dia de semana, primeras 3 letras
 
         # resample weekly and take the last value, so it only appears the price of the last day of each particular week.
         weekly_returns = df[price_column][:date].resample('W-' + current_day, closed='right').last()
@@ -54,6 +54,8 @@ def calculate_current_over_media(df, ticker, rounds, price_column):
 
         df.loc[date, f'$/{rounds}M'] = current_price/media200
 
+    return df
+
 def find_media_rounds(df, price_column, rounds):
     last_values = df[price_column][-rounds:]
     mean_last_values = last_values.mean()
@@ -62,22 +64,27 @@ def find_media_rounds(df, price_column, rounds):
 def main():
     tickers = ['AAPL', 'IBM', 'AMZN']
 
+    #column names
+    price_200_media_column = "$/200media"
+    desvio_column = "desvio ($/200media)"
+    rsi_column = "RSI14W"
+
     #armo dataframe
-    df = pd.DataFrame(index=tickers, columns=["$/200media", "std ($/200media)", "RSI14W"])
+    df = pd.DataFrame(index=tickers, columns=[price_200_media_column, desvio_column, rsi_column])
     df.index.name = "Ticker"
 
     #para cada ticker
     for ticker in tickers:
         ticker_data = fetch_ticker_data(ticker, '10y')
-        ticker_data = cleaning_dataframe(df)
+        ticker_data = cleaning_dataframe(ticker_data)
 
         #parameters
         rounds = 200
         rsi_amount = 14
         rsi_period = 'weekly'
-        price_column = 'Adj Close'
+        price_column = 'Close'
 
-        ticker_data = calculate_rsi(ticker_data, rsi_amount, rsi_period, price_column) #agrego columna con rsi de 14 semanas al momento
+        ticker_data = calculate_rsi(ticker_data, rsi_amount, rsi_period, price_column, ticker) #agrego columna con rsi de 14 semanas al momento
         ticker_data = calculate_current_over_media(ticker_data, ticker, rounds, price_column) #columna del ratio al momento
 
         #estandarizo ratio sobre serie histórica
@@ -88,9 +95,11 @@ def main():
         standarized = (ratio - mean) / std
 
         #add to dataframe
-        df.loc[ticker, "$/200media"] = ticker_data[f'$/{rounds}M'].iloc[-1]
-        df.loc[ticker, "RSI14W"] = ticker_data[f'RSI{period}{amount}'].iloc[-1]
-        df.loc[ticker, "std ($/200media)"] = standarized
+        df.loc[ticker, price_200_media_column] = ticker_data[f'$/{rounds}M'].iloc[-1]
+        df.loc[ticker, desvio_column] = ticker_data[f'RSI{rsi_period}{rsi_amount}'].iloc[-1]
+        df.loc[ticker, rsi_column] = standarized
+
+    df.to_excel('eeuuAnalysis.xlsx')
 
 
 
