@@ -138,8 +138,7 @@ def add_strategy_returns_and_prices(df, price_column, ticker_returns_column, pos
         elif (df.loc[index, 'operationDay'] == -11):
             df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 - comision_salida) * (1 + (strategy_return))
         elif (df.loc[index, 'operationDay'] == 22):
-            df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 - comision_salida) * (
-                        1 + comision_entrada) * (1 + (strategy_return))
+            df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 - comision_salida) * (1 + comision_entrada) * (1 + (strategy_return))
 
         previous_strategy_price = df.loc[index, 'strategy_prices']
 
@@ -238,31 +237,102 @@ def calculate_stats(backtest_data, stats, tickerPrice, tickerReturn, stratPrice,
 
 def calculate_subperiod_stats(backtest_data, stats, tickerPrice, tickerReturn, stratPrice, stratReturn, sp500Price, sp500Return, positionColumn):
     start_date = backtest_data.index[0]
-    position = backtest_data[positionColumn].iloc[0]
+    position = backtest_data[positionColumn][0]
+
+    backtest_data['date'] = backtest_data.index
+    backtest_data['next_date'] = backtest_data['date'].shift(-1)
+    backtest_data['next_position'] = backtest_data[positionColumn].shift(-1)
 
     for idx, row in backtest_data.iterrows():
         current_date = idx
         current_position = row[positionColumn]
 
-        next_row = row.shift(1)
-        if not next_row.empty:
-            next_index = next_row.index
-            next_position = next_row[positionColumn]
+        if not pd.isnull(row['next_date']):
+            next_position = row['next_position']
+            next_date = row['next_date']
 
             if next_position != position:
                 #slice dataframe from start_date to current_date
-                sliced_df = backtest_data.loc[start_date:current_date]
+                sliced_df = backtest_data.loc[start_date:current_date] #df de la data solo en el subperíodo
 
-                #add
+                new_index_period = f"{start_date.strftime('%Y-%m-%d')}/{current_date.strftime('%Y-%m-%d')}"
+
+                #add q days and position to stats
+                days_passed = (current_date - start_date).days
+                stats.loc[new_index_period, ('q days', '')] = days_passed
+                stats.loc[new_index_period, ('position', '')] = position
+
+
+                #add returns 30d, 60d, 90d, 180d, total to stats -> para cada strat
+                add_returns_to_stats(new_index_period, sliced_df, sp500Price, sp500Return, stats, stratPrice,
+                                     stratReturn, tickerPrice, tickerReturn)
 
                 #change start_date and position for the new ones
-                start_date =
+                start_date = next_date
                 position = next_position
         else:
-            #si la próxima fila no existe (estoy parado en la última row)
+            # slice dataframe from start_date to current_date
+            sliced_df = backtest_data.loc[start_date:current_date]  # df de la data solo en el subperíodo
 
-            #slice dataframe from start_date to current_date
+            new_index_period = f"{start_date.strftime('%Y-%m-%d')}/{current_date.strftime('%Y-%m-%d')}"
 
+            # add q days and position to stats
+            days_passed = (current_date - start_date).days
+            stats.loc[new_index_period, ('q days', '')] = days_passed
+            stats.loc[new_index_period, ('position', '')] = position
+
+            # add returns 30d, 60d, 90d, 180d, total to stats -> para cada strat
+            add_returns_to_stats(new_index_period, sliced_df, sp500Price, sp500Return, stats, stratPrice,
+                                 stratReturn, tickerPrice, tickerReturn)
+
+            # change start_date and position for the new ones
+            start_date = next_date
+            position = next_position
+
+
+    #borrar las columnas next_date y next_position
+
+
+    return stats
+
+
+def add_returns_to_stats(new_index_period, sliced_df, sp500Price, sp500Return, stats, stratPrice, stratReturn,
+                         tickerPrice, tickerReturn):
+    for strategy in ['Activo', 'Estrategia', 'S&P-500']:
+        if strategy == 'Activo':
+            price_column = tickerPrice
+            returns_column = tickerReturn
+        elif strategy == 'Estrategia':
+            price_column = stratPrice
+            returns_column = stratReturn
+        elif strategy == 'S&P-500':
+            price_column = sp500Price
+            returns_column = sp500Return
+
+        day0 = sliced_df['date'].iloc[0]
+        day30 = find_previous_closest_date(day0 + pd.Timedelta(days=30), sliced_df)
+        day60 = find_previous_closest_date(day0 + pd.Timedelta(days=60), sliced_df)
+        day90 = find_previous_closest_date(day0 + pd.Timedelta(days=90), sliced_df)
+        day180 = find_previous_closest_date(day0 + pd.Timedelta(days=180), sliced_df)
+
+        day0_price = sliced_df.loc[day0, price_column]
+        day30_price = sliced_df.loc[day30, price_column]
+        day60_price = sliced_df.loc[day60, price_column]
+        day90_price = sliced_df.loc[day90, price_column]
+        day180_price = sliced_df.loc[day180, price_column]
+        last_day_price = sliced_df[price_column].iloc[-1]
+
+        day30_return = (day30_price - day0_price) / day0_price
+        day60_return = (day60_price - day0_price) / day0_price
+        day90_return = (day90_price - day0_price) / day0_price
+        day180_return = (day180_price - day0_price) / day0_price
+        total_return = (last_day_price - day0_price) / day0_price
+
+        stats.loc[new_index_period, (strategy, '%30d')] = day30_return
+        stats.loc[new_index_period, (strategy, '%60d')] = day60_return
+        stats.loc[new_index_period, (strategy, '%90d')] = day90_return
+        stats.loc[new_index_period, (strategy, '%180d')] = day180_return
+        stats.loc[new_index_period, (strategy, '%total')] = total_return
 
 
 def add_sp500_returns_and_prices(df, sp500Ticker, period):
@@ -276,11 +346,25 @@ def add_sp500_returns_and_prices(df, sp500Ticker, period):
 
 def create_subperiod_stats(ticker_data):
     columns = pd.MultiIndex.from_product(
-        [['Activo', 'Estrategia', 'S&P-500'], ['rondas','%30d', '%60d', '%90d', '%180d', '%total']])
+        [['Activo', 'Estrategia', 'S&P-500'], ['%30d', '%60d', '%90d', '%180d', '%total', ' ']])
     stats = pd.DataFrame(columns=columns)
-    stats['q rounds'] = np.nan
     stats.index.name = 'periods'
     return stats
+
+def find_previous_closest_date(current_date, df):
+    closest_date = None
+    min_difference = float('inf') #infinito
+
+    for date in df.index:
+        if date > current_date:
+            continue
+
+        difference = abs((date - current_date).total_seconds())
+        if difference < min_difference:
+            min_difference = difference
+            closest_date = date
+
+    return closest_date
 
 
 def main():
@@ -307,16 +391,27 @@ def main():
     #create_drawdown_graph(ticker_data, 'Adj Close')
 
     # create stats excel
-    stats = create_stats_df(ticker_data)
-    stats = calculate_stats(ticker_data, stats, 'Adj Close', 'ticker_returns',
+    general_stats = create_stats_df(ticker_data)
+    general_stats = calculate_stats(ticker_data, general_stats, 'Adj Close', 'ticker_returns',
                             'strategy_prices', 'strategy_returns', 'sp500price',
                             'sp500returns', 'positionShift')
 
-    stats.to_excel('stats.xlsx', index=True)
+    general_stats.to_excel('general_stats.xlsx', index=True)
 
-    bought_stats = create_subperiod_stats(ticker_data)
+    subperiod_stats = create_subperiod_stats(ticker_data)
+    subperiod_stats = calculate_subperiod_stats(ticker_data, subperiod_stats, 'Adj Close', 'ticker_returns', 'strategy_prices', 'strategy_returns', 'sp500price', 'sp500returns', 'positionShift')
+    subperiod_stats.to_excel('subperiod_stats.xlsx')
+
+    bought_stats = subperiod_stats[subperiod_stats['position'] == 1]
+    cash_stats = subperiod_stats[subperiod_stats['position'] == 0]
+    sold_stats = subperiod_stats[subperiod_stats['position'] == -1]
+
     bought_stats.to_excel('bought_stats.xlsx')
-    bought_stats = calculate_subperiod_stats(ticker_data, bought_stats, 'Adj Close', 'ticker_returns', 'strategy_prices', 'strategy_returns', 'sp500price', 'sp500returns', 'positionShift')
+    cash_stats.to_excel('cashed_stats.xlsx')
+    sold_stats.to_excel('sold_stats.xlsx')
+
+
+
 
 if __name__ == "__main__":
     main()
