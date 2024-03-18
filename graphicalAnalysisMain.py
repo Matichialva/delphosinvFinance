@@ -75,15 +75,23 @@ def fetch_ticker_data(ticker, start_time):
     ticker_data = yf.download(ticker, start= start_time, auto_adjust=True) #adjust by dividends/stocksplits
     return ticker_data
 
-def cleaning_dataframe(df):
+def cleaning_dataframe(df, ticker, start_time):
     '''clean the dataframe'''
-    df.sort_index(ascending=True, inplace=True) #lo dejo sorteado con la última fecha abajo.
-    df.index.name = "Date" #index column llamada "Date"
-    df.ffill(inplace=True) #relleno los vacios con el valor del de arriba
-    df.dropna(how="all", inplace=True) #si hay filas completamente vacias, funalas
-    df.index = df.index.strftime("%Y-%m-%d")
-    df.index = pd.to_datetime(df.index)
-
+    try:
+        df.sort_index(ascending=True, inplace=True) #lo dejo sorteado con la última fecha abajo.
+        df.index.name = "Date" #index column llamada "Date"
+        df.ffill(inplace=True) #relleno los vacios con el valor del de arriba
+        df.dropna(how="all", inplace=True) #si hay filas completamente vacias, funalas
+        df.index = df.index.strftime("%Y-%m-%d")
+        df.index = pd.to_datetime(df.index)
+    except AttributeError:
+        df = yf.download(ticker, start=start_time, auto_adjust=True)  # adjust by dividends/stocksplits
+        df.sort_index(ascending=True, inplace=True)  # lo dejo sorteado con la última fecha abajo.
+        df.index.name = "Date"  # index column llamada "Date"
+        df.ffill(inplace=True)  # relleno los vacios con el valor del de arriba
+        df.dropna(how="all", inplace=True)  # si hay filas completamente vacias, funalas
+        df.index = df.index.strftime("%Y-%m-%d")
+        df.index = pd.to_datetime(df.index)
     return df
 
 def calculate_mama_fama_daily(data, fast=0.25, slow=0.05):
@@ -430,9 +438,9 @@ def main():
 
     with PdfPages('stockAnalysis.pdf') as pdf_pages: #guardo en pdf el resultado
         for ticker in tickers:
-            if ticker not in ['HYGY', 'EWZ-again', 'FXI-again', 'ITA-again']:
+            if ticker not in ['HYGY', 'EWZ-again', 'FXI-again', 'ITA-again', 'SPY-again']:
                 ticker_data = fetch_ticker_data(ticker, start_time) #armo dataframe con precios historicos
-                ticker_data = cleaning_dataframe(ticker_data) #limpio dataframe
+                ticker_data = cleaning_dataframe(ticker_data, ticker, start_time) #limpio dataframe
 
                 plot_price_MA_volume(ticker_data, ticker, pdf_pages, tickersCategories, start_date=start_date) #ploteo el gráfico
 

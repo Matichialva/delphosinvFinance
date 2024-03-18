@@ -6,6 +6,7 @@ import mplfinance as mpf
 from matplotlib.backends.backend_pdf import PdfPages
 import statistics
 import math
+import dataframe_image as dfi
 
 
 def create_dataframe(ticker, period):
@@ -133,8 +134,7 @@ def add_strategy_returns_and_prices(df, price_column, ticker_returns_column, pos
         if (df.loc[index, 'operationDay'] == 0):
             df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 + strategy_return)
         elif (df.loc[index, 'operationDay'] == 11):
-            df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 + comision_entrada) * (
-                        1 + (strategy_return))
+            df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 + comision_entrada) * (1 + (strategy_return))
         elif (df.loc[index, 'operationDay'] == -11):
             df.loc[index, 'strategy_prices'] = previous_strategy_price * (1 - comision_salida) * (1 + (strategy_return))
         elif (df.loc[index, 'operationDay'] == 22):
@@ -145,37 +145,58 @@ def add_strategy_returns_and_prices(df, price_column, ticker_returns_column, pos
     return df
 
 
-def create_prices_graph(ticker_data, price_column, strategy_price_column, fechas):
-    plt.figure(figsize=(10, 6))
-    plt.plot(fechas, ticker_data[price_column], label='stock price')
-    plt.plot(fechas, ticker_data[strategy_price_column], label='strategy price')
+def create_prices_graph(ticker_data, price_column, strategy_price_column, fechas, ax=None, first_ax = 0):
+    if ax.any():
+        ax[first_ax].plot(fechas, ticker_data[price_column], label='stock price')
+        ax[first_ax].plot(fechas, ticker_data[strategy_price_column], label='strategy price')
 
-    plt.title('stock & strategy prices')
-    plt.xlabel('Date')
-    plt.ylabel('prices')
-    plt.legend()
+        ax[first_ax].set_title('stock & strategy prices')
+        #ax[first_ax].set_xlabel('Date')
+        ax[first_ax].set_ylabel('prices')
+        ax[first_ax].legend()
 
-    plt.savefig('prices_graph.png')
+        #ax[first_ax].savefig('prices_graph.png')
+    else:
+        plt.figure(figsize=(10, 6))
+        plt.plot(fechas, ticker_data[price_column], label='stock price')
+        plt.plot(fechas, ticker_data[strategy_price_column], label='strategy price')
+
+        plt.title('stock & strategy prices')
+        plt.xlabel('Date')
+        plt.ylabel('prices')
+        plt.legend()
+
+        plt.savefig('prices_graph.png')
 
 
-def create_drawdown_graph(df, price_column):
+def create_drawdown_graph(df, price_column, ax=None, first_ax=0):
     ticker_data = df.copy()
     ticker_data['previous peak'] = ticker_data[price_column].cummax()
-    ticker_data['drawdown'] = (ticker_data[price_column] - ticker_data['previous peak']) / ticker_data['previous peak']
+    ticker_data['drawdown'] = (ticker_data[price_column] - ticker_data['previous peak']) / ticker_data[
+        'previous peak'] * 100
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(ticker_data.index, ticker_data[price_column], label='stock price', color='dodgerblue')
-    plt.plot(ticker_data.index, ticker_data['previous peak'], label='previous peak', linestyle='--', color='blue')
+    if ax is None:
+        fig, ax = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [2, 1]})
 
-    plt.fill_between(ticker_data.index, ticker_data[price_column], ticker_data['previous peak'],
-                     where=ticker_data['drawdown'] < 0, color='salmon', alpha=0.3, label='drawdown')
+    # Plot stock price and previous peak in the first subplot
+    ax[first_ax].plot(ticker_data.index, ticker_data[price_column], label='Stock Price', color='dodgerblue')
+    ax[first_ax].plot(ticker_data.index, ticker_data['previous peak'], label='Previous Peak', linestyle='--', color='blue')
+    #ax[first_ax].set_xlabel('Date')
+    ax[first_ax].set_ylabel('Price')
+    ax[first_ax].set_title('Stock Price & Drawdown')
+    ax[first_ax].legend()
 
-    plt.xlabel('Date')
-    plt.ylabel('price')
-    plt.title('stock price & drawdown')
-    plt.legend()
+    # Plot drawdown in the second subplot
+    ax[first_ax+1].fill_between(ticker_data.index, 0, ticker_data['drawdown'],
+                       where=ticker_data['drawdown'] < 0, color='salmon', alpha=0.3, label='Drawdown')
+    #ax[first_ax+1].set_xlabel('Date')
+    ax[first_ax+1].set_ylabel('Drawdown (%)')
+    ax[first_ax+1].set_title('Stock Drawdown')
+    ax[first_ax+1].legend()
 
-    plt.savefig('drawdown_graph.png')
+    #plt.tight_layout()
+    #plt.savefig('drawdown_graph.png')
+    #plt.close()
 
 
 def create_stats_df(df):
@@ -346,7 +367,7 @@ def add_sp500_returns_and_prices(df, sp500Ticker, period):
 
 def create_subperiod_stats(ticker_data):
     columns = pd.MultiIndex.from_product(
-        [['Activo', 'Estrategia', 'S&P-500'], ['%30d', '%60d', '%90d', '%180d', '%total', ' ']])
+        [['Activo', 'Estrategia', 'S&P-500'], ['%30d', '%60d', '%90d', '%180d', '%total']])
     stats = pd.DataFrame(columns=columns)
     stats.index.name = 'periods'
     return stats
@@ -367,41 +388,7 @@ def find_previous_closest_date(current_date, df):
     return closest_date
 
 
-def main():
-    ticker = "AAPL"
-    period = '5y'
-
-    ticker_data = create_dataframe(ticker, period)
-
-    ticker_data = append_variables_for_signals(ticker_data, 'Adj Close', 'MA20', 20, 'MA200', 200)
-    ticker_data = delete_unuseful_columns(ticker_data, ['Close', 'Open', 'High', 'Low', 'Volume'])
-    ticker_data = add_position_and_operationDay(ticker_data, 1)
-
-    ticker_data = add_returns(ticker_data, 'Adj Close')
-    ticker_data = add_strategy_returns_and_prices(ticker_data, 'Adj Close', 'ticker_returns', 1, 202, 0, 0)
-    ticker_data = add_sp500_returns_and_prices(ticker_data, "^SPX", period)
-
-    ticker_data = delete_first_x_rows(ticker_data, 201)
-    ticker_data.to_excel('BacktestData.xlsx', index=True)
-
-    # create price plot of strategy and stock, and save it in png file.
-    #create_prices_graph(ticker_data, 'Adj Close', 'strategy_prices', ticker_data.index)
-
-    # create drawdown graph
-    #create_drawdown_graph(ticker_data, 'Adj Close')
-
-    # create stats excel
-    general_stats = create_stats_df(ticker_data)
-    general_stats = calculate_stats(ticker_data, general_stats, 'Adj Close', 'ticker_returns',
-                            'strategy_prices', 'strategy_returns', 'sp500price',
-                            'sp500returns', 'positionShift')
-
-    general_stats.to_excel('general_stats.xlsx', index=True)
-
-    subperiod_stats = create_subperiod_stats(ticker_data)
-    subperiod_stats = calculate_subperiod_stats(ticker_data, subperiod_stats, 'Adj Close', 'ticker_returns', 'strategy_prices', 'strategy_returns', 'sp500price', 'sp500returns', 'positionShift')
-    subperiod_stats.to_excel('subperiod_stats.xlsx')
-
+def create_stats_for_each_subperiod(subperiod_stats):
     bought_stats = subperiod_stats[subperiod_stats['position'] == 1]
     cash_stats = subperiod_stats[subperiod_stats['position'] == 0]
     sold_stats = subperiod_stats[subperiod_stats['position'] == -1]
@@ -409,6 +396,120 @@ def main():
     bought_stats.to_excel('bought_stats.xlsx')
     cash_stats.to_excel('cashed_stats.xlsx')
     sold_stats.to_excel('sold_stats.xlsx')
+
+    return bought_stats, cash_stats, sold_stats
+
+
+def main():
+    ticker = "AAPL"
+    period = '5y'
+
+    #create ticker data's dataframe
+    ticker_data = create_dataframe(ticker, period)
+
+    #particular strategy
+    ticker_data = append_variables_for_signals(ticker_data, 'Adj Close', 'MA20', 20, 'MA200', 200)
+    ticker_data = delete_unuseful_columns(ticker_data, ['Close', 'Open', 'High', 'Low', 'Volume'])
+    ticker_data = add_position_and_operationDay(ticker_data, 1)
+
+    #add ticker returns / add strategy returns and prices given columns and particular position. / add sp500 returns and prices.
+    ticker_data = add_returns(ticker_data, 'Adj Close')
+    ticker_data = add_strategy_returns_and_prices(ticker_data, 'Adj Close', 'ticker_returns', 1, 202, 0, 0)
+    ticker_data = add_sp500_returns_and_prices(ticker_data, "^SPX", period)
+
+    #particular strategy-extra
+    ticker_data = delete_first_x_rows(ticker_data, 201)
+
+    #save database in excel file
+    ticker_data.to_excel('BacktestData.xlsx', index=True)
+
+    #create general stats - excel
+    general_stats = create_stats_df(ticker_data)
+    general_stats = calculate_stats(ticker_data, general_stats, 'Adj Close', 'ticker_returns',
+                            'strategy_prices', 'strategy_returns', 'sp500price',
+                            'sp500returns', 'positionShift')
+
+    general_stats.to_excel('general_stats.xlsx', index=True)
+
+    #create subperiod stats - excel
+    subperiod_stats = create_subperiod_stats(ticker_data)
+    subperiod_stats = calculate_subperiod_stats(ticker_data, subperiod_stats, 'Adj Close', 'ticker_returns', 'strategy_prices', 'strategy_returns', 'sp500price', 'sp500returns', 'positionShift')
+    subperiod_stats.to_excel('subperiod_stats.xlsx')
+
+    #create each subperiod's stats - excel
+    bought_stats, cash_stats, sold_stats = create_stats_for_each_subperiod(subperiod_stats)
+
+    subperiods_rows = len(subperiod_stats)
+    bought_rows = len(bought_stats)
+    cash_rows = len(cash_stats)
+    sold_rows = len(sold_stats)
+
+    dfi.export(general_stats, 'general_stats.png')
+    dfi.export(bought_stats.drop(columns=['position']), 'bought_stats.png')
+    dfi.export(cash_stats.drop(columns=['position']), 'cashed_stats.png')
+    dfi.export(sold_stats.drop(columns=['position']), 'sold_stats.png')
+
+
+    #create informe with data & graphs.
+    with PdfPages('backtestAnalysis.pdf') as pdf_pages:
+        nrows=5
+        ncols=1
+
+        #create figure and axes to then add text and graphs
+        fig, axs = plt.subplots(nrows, ncols, figsize = (15, 25))
+
+        #add title
+        plt.suptitle(f'Backtesting - {ticker} - {period}', fontsize=30, y=0.98)
+
+        # create price plot of strategy and stock, and save it in png file.
+        create_prices_graph(ticker_data, 'Adj Close', 'strategy_prices', ticker_data.index, ax=axs, first_ax=0)
+
+        # create drawdown graph
+        create_drawdown_graph(ticker_data, 'Adj Close', ax=axs, first_ax=1)
+
+        #create general stats graph
+        general_stats_image = plt.imread('general_stats.png')
+        axs[nrows-2].imshow(general_stats_image)
+        axs[nrows-2].axis('off')
+
+        #add text to the last axis
+        axs[nrows-1].axis('off')
+        axs[nrows-1].text(0.01, 0.90, f"cantidad de señales/períodos: {subperiods_rows}", fontsize=18)
+        axs[nrows-1].text(0.01, 0.78, f"período analizado: {subperiods_rows}", fontsize=18)
+        plt.text(0.01, 0.66, f"%comprado : {round(((bought_rows/subperiods_rows)*100), 1)} %", fontsize=18)
+        plt.text(0.01, 0.54, f"%vendido : {round(((sold_rows/subperiods_rows)*100), 1)} %", fontsize=18)
+        plt.text(0.01, 0.42, f"%cash : {round(((cash_rows/subperiods_rows)*100), 1)} %", fontsize=18)
+
+        #save figure in pdf and then close it
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        #page 2
+        fig = plt.figure(figsize=(10, 10))
+        bought_stats_image = plt.imread('bought_stats.png')
+        plt.imshow(bought_stats_image)
+        plt.axis('off')
+        plt.title('Bought Stats')
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        #page 3
+        fig = plt.figure(figsize=(10, 10))
+        cashed_stats_image = plt.imread('cashed_stats.png')
+        plt.imshow(cashed_stats_image)
+        plt.axis('off')
+        plt.title('Cashed Stats')
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        #page 4
+        fig = plt.figure(figsize=(10, 10))
+        sold_stats_image = plt.imread('sold_stats.png')
+        plt.imshow(sold_stats_image)
+        plt.axis('off')
+        plt.title('Sold Stats')
+        pdf_pages.savefig(fig)
+        plt.close(fig)
 
 
 
