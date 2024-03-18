@@ -170,9 +170,9 @@ def main():
         standarized = (ratio - mean) / std
 
         #add to dataframe
-        df.loc[ticker, price_200_media_column] = ticker_data[f'$/{rounds}M'].iloc[-1]
-        df.loc[ticker, desvio_column] = standarized
-        df.loc[ticker, rsi_column] = ticker_data[f'RSI{rsi_period}{rsi_amount}'].iloc[-1]
+        df.loc[ticker, price_200_media_column] = round(ticker_data[f'$/{rounds}M'].iloc[-1], 2)
+        df.loc[ticker, desvio_column] = round(standarized, 2)
+        df.loc[ticker, rsi_column] = round(ticker_data[f'RSI{rsi_period}{rsi_amount}'].iloc[-1], 2)
 
     df.to_excel('worldAnalysis.xlsx')
     upload_to_google_drive('worldAnalysis.xlsx', 'worldAnalysis', '1lJxR5KceOwqe8u1KlApCZALpyQ8sJ5RR')
