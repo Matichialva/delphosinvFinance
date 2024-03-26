@@ -1,7 +1,6 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from eeuuFinance import functions_etfReturns
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import talib
@@ -69,7 +68,7 @@ def upload_to_google_drive(file_path, basename_, folder_id):
 
 
 def fetch_ticker_data(ticker, period):
-    ticker_data = yf.download(ticker, period=period, auto_adjust=True) #adjust by dividends/stocksplits
+    ticker_data = yf.download(ticker, period=period, auto_adjust=True)
     return ticker_data
 
 def cleaning_dataframe(df, ticker, period):
@@ -150,6 +149,7 @@ def main():
     #para cada ticker
     for ticker in tickers:
         period = '10y'
+
         ticker_data = fetch_ticker_data(ticker, period)
         ticker_data = cleaning_dataframe(ticker_data, ticker, period)
 
