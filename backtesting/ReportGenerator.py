@@ -69,14 +69,15 @@ class ReportGenerator:
         ax.imshow(image)
         ax.axis('off')
 
-    def add_text_statistics(self, ax, subperiods_rows, bought_rows, cash_rows, sold_rows):
+    def add_text_statistics(self, ax, subperiods_rows, bought_rows, cash_rows, sold_rows, trading_days, bought_days, cash_days, sold_days):
+
         ax.axis('off')
         ax.text(0.01, 0.90, f"cantidad de señales/períodos: {subperiods_rows}", fontsize=18)
         ax.text(0.01, 0.78, f"período analizado: {self.period}", fontsize=18)
         #plt.axis('off')
-        plt.text(0.01, 0.66, f"%comprado : {round(((bought_rows / subperiods_rows) * 100), 1)} %", fontsize=18)
-        plt.text(0.01, 0.54, f"%vendido : {round(((sold_rows / subperiods_rows) * 100), 1)} %", fontsize=18)
-        plt.text(0.01, 0.42, f"%cash : {round(((cash_rows / subperiods_rows) * 100), 1)} %", fontsize=18)
+        plt.text(0.01, 0.66, f"períodos comprado : {bought_rows}, tiempo comprado : {round(((bought_days / trading_days) * 100), 1)}%", fontsize=18)
+        plt.text(0.01, 0.54, f"períodos vendido : {sold_rows}, tiempo vendido : {round(((sold_days / trading_days) * 100), 1)}%", fontsize=18)
+        plt.text(0.01, 0.42, f"períodos en cash : {cash_rows}, tiempo en cash : {round(((cash_days / trading_days) * 100), 1)}%", fontsize=18)
 
     def generate_report(self):
         with PdfPages('backtestAnalysis.pdf') as pdf_pages:
@@ -93,14 +94,19 @@ class ReportGenerator:
             bought_rows = len(self.subperiod_stats[self.subperiod_stats['position'] == 1])
             cash_rows = len(self.subperiod_stats[self.subperiod_stats['position'] == 0])
             sold_rows = len(self.subperiod_stats[self.subperiod_stats['position'] == -1])
-            self.add_text_statistics(axs[4], subperiods_rows, bought_rows, cash_rows, sold_rows)
+
+            trading_days = len(self.data)
+            bought_days = len(self.data[self.data['position'] == 1])
+            cash_days = len(self.data[self.data['position'] == 0])
+            sold_days = len(self.data[self.data['position'] == -1])
+            self.add_text_statistics(axs[4], subperiods_rows, bought_rows, cash_rows, sold_rows, trading_days, bought_days, cash_days, sold_days)
 
             pdf_pages.savefig(fig)
             plt.close(fig)
 
             # Add additional pages for bought, cashed, and sold stats
             for stats_path in [self.bought_stats_path, self.cashed_stats_path, self.sold_stats_path]:
-                fig = plt.figure(figsize=(10, 10))
+                fig = plt.figure(figsize=(40, 40))
                 image = plt.imread(stats_path)
                 plt.imshow(image)
                 plt.axis('off')
