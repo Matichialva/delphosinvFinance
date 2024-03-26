@@ -7,8 +7,8 @@ from eeuuFinance.backtesting.UNRATEstrategy import UNRATEstrategy
 
 
 def main():
-    ticker = "NVDA"
-    period = '5y'
+    ticker = "^SPX"
+    period = 'max'
 
     #fetches and processes data
     data_manager = DataManager(ticker, period)

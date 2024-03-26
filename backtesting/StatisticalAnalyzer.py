@@ -32,6 +32,9 @@ class StatisticalAnalyzer:
             elif periodo == 'vendido':
                 period_dataframe = self.data[self.data[positionColumn] == -1]
 
+            if period_dataframe.empty:
+                continue
+
             for strategy in ['Activo', 'Estrategia', 'S&P-500']:
                 if strategy == 'Activo':
                     returns_column = period_dataframe[tickerReturn]
